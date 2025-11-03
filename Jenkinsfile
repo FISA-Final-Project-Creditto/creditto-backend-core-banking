@@ -1,13 +1,11 @@
 pipeline {
     agent any
 
-    tools {
-        jdk 'JDK17'
-    }
-
     stages {
         stage('Build and Test') {
             steps {
+                withCredentials([file(credentialsId: 'core_banking_env', variable:'ENV_FILE')]) {
+                sh 'cp $ENV_FILE .env'
                 sh 'chmod +x ./gradlew'
 
                 sh './gradlew clean build'
