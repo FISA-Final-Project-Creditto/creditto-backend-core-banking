@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     tools {
-        jdk 'jdk17'
+        jdk 'JDK17'
     }
 
     stages {
@@ -18,11 +18,11 @@ pipeline {
     post {
         success {
             echo 'CI 성공 PR Status 업데이트 ✅'
-            setGitHubPullRequestStatus status: 'SUCCESS', context: 'Jenkins CI - Build and Test'
+            setGitHubPullRequestStatus state: 'SUCCESS', context: 'Jenkins CI - Build and Test'
         }
         failure {
             echo 'CI 실패 PR Status 업데이트 ❌' 
-            setGitHubPullRequestStatus status: 'FAILURE', context: 'Jenkins CI - Build and Test'
+            setGitHubPullRequestStatus state: 'FAILURE', context: 'Jenkins CI - Build and Test'
         }
     }
 }
