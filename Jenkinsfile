@@ -21,12 +21,16 @@ pipeline {
 
     post {
         success {
-            echo 'CI 성공 PR Status 업데이트 ✅'
-            setGitHubPullRequestStatus state: 'SUCCESS', context: 'Jenkins CI - Build and Test'
+            echo 'CI 성공 ✅'
+            if (env.CHANGE_ID) {
+                setGitHubPullRequestStatus state: 'SUCCESS', context: 'Jenkins CI - Build and Test'
+            }
         }
         failure {
-            echo 'CI 실패 PR Status 업데이트 ❌' 
-            setGitHubPullRequestStatus state: 'FAILURE', context: 'Jenkins CI - Build and Test'
+            echo 'CI 실패 ❌'
+            if (env.CHANGE_ID) {
+                setGitHubPullRequestStatus state: 'FAILURE', context: 'Jenkins CI - Build and Test'
+            }
         }
     }
 }
