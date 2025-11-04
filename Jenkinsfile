@@ -20,22 +20,8 @@ pipeline {
     }
 
     post {
-        success {
-            echo 'CI 성공 ✅'
-            script {
-                if (env.CHANGE_ID) {
-                    setGitHubPullRequestStatus state: 'SUCCESS', context: 'Jenkins CI - Build and Test'
-                }
-            }
-
-        }
-        failure {
-            echo 'CI 실패 ❌'
-            script {
-                if (env.CHANGE_ID) {
-                    setGitHubPullRequestStatus state: 'FAILURE', context: 'Jenkins CI - Build and Test'
-                }
-            }
-        }
+      always {
+        junit 'build/test-results/test/*.xml'
+      }
     }
 }
