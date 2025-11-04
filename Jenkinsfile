@@ -4,11 +4,11 @@ pipeline {
     stages {
         stage('Build and Test') {
             steps {
-                withCredentials([file(credentialsId: 'core_banking_env', variable: 'ENV_FILE')]) {
+                withCredentials([string(credentialsId: 'core_banking_env', variable: 'ENV_CONTENT')]) {
                     sh '''
-                        cp $ENV_FILE /tmp/.env
-                        cp /tmp/.env .env || cat /tmp/.env > .env
+                        echo "$ENV_CONTENT" > .env
                         chmod 600 .env
+                        ls -al .env
                     '''
                 }
 
