@@ -4,12 +4,16 @@ pipeline {
     stages {
         stage('Build and Test') {
             steps {
-                withCredentials([file(credentialsId: 'core_banking_env', variable:'ENV_FILE')]) {
-                    sh 'cp $ENV_FILE .env'
-                    sh 'chmod +x ./gradlew'
-
-                    sh './gradlew clean build'
+                withCredentials([file(credentialsId: 'env-file', variable: 'ENV_FILE')]) {
+                    sh '''
+                        cp $ENV_FILE /tmp/.env
+                        cp /tmp/.env .env || cat /tmp/.env > .env
+                        chmod 600 .env
+                    '''
                 }
+
+                sh 'chmod +x ./gradlew'
+                sh './gradlew clean build'
             }
         }
     }
