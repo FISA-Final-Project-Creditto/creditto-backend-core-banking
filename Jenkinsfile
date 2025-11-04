@@ -9,6 +9,7 @@ pipeline {
                         echo "$ENV_CONTENT" > .env
                         chmod 600 .env
                         ls -al .env
+                        echo "env 파일 적재 완료 ✔"
                     '''
                 }
 
