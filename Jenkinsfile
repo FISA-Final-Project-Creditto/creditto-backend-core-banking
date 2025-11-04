@@ -4,7 +4,7 @@ pipeline {
     stages {
         stage('Build and Test') {
             steps {
-                withCredentials([file(credentialsId: 'env-file', variable: 'ENV_FILE')]) {
+                withCredentials([file(credentialsId: 'core_banking_env', variable: 'ENV_FILE')]) {
                     sh '''
                         cp $ENV_FILE /tmp/.env
                         cp /tmp/.env .env || cat /tmp/.env > .env
