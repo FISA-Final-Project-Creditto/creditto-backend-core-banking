@@ -11,8 +11,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.math.BigDecimal;
-
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/core/account")
@@ -22,7 +20,17 @@ public class AccountController {
 
 
     @GetMapping("/{accountId}/balance")
-    public ResponseEntity<BaseResponse<?>> getBalance(@PathVariable String accountId) {
+    public ResponseEntity<BaseResponse<?>> getBalance(@PathVariable Long accountId) {
         return ApiResponseUtil.success(SuccessCode.OK, accountService.getBalance(accountId));
+    }
+
+    @GetMapping("/{accountNo}")
+    public ResponseEntity<BaseResponse<?>> getBalance(@PathVariable String accountNo) {
+        return ApiResponseUtil.success(SuccessCode.OK, accountService.findByAccountNo(accountNo));
+    }
+
+    @GetMapping("/{clientId}")
+    public ResponseEntity<BaseResponse<?>> findByClientId(@PathVariable String clientId) {
+        return ApiResponseUtil.success(SuccessCode.OK, accountService.findByClientId(clientId));
     }
 }

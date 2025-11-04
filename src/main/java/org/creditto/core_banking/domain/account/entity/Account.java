@@ -17,9 +17,9 @@ public class Account extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long AccountId;
+    private Long id;
 
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Transaction> transactions;
 
     private String accountNo;
@@ -29,17 +29,22 @@ public class Account extends BaseEntity {
     @Column(precision = 20, scale = 2) // => 정수18자리, 소수점 부분 2자리
     private BigDecimal balance;
 
-    private String accountType;
+    @Enumerated(EnumType.STRING)
+    private AccountType accountType;
 
-    private String accountState;
+    @Enumerated(EnumType.STRING)
+    private AccountState accountState;
 
-    public static Account of(String accountNo, String accountName, BigDecimal balance, String accountType, String accountState) {
+    private String clientId;
+
+    public static Account of(String accountNo, String accountName, BigDecimal balance, AccountType accountType, AccountState accountState, String clientId) {
         return Account.builder()
                 .accountNo(accountNo)
                 .accountName(accountName)
                 .balance(balance)
                 .accountType(accountType)
                 .accountState(accountState)
+                .clientId(clientId)
                 .build();
     }
 }

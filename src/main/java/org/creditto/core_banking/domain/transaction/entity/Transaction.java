@@ -26,6 +26,7 @@ public class Transaction extends BaseEntity {
     @Column(precision = 20, scale = 2) // => 정수18자리, 소수점 부분 2자리
     private BigDecimal txnAmount;
 
+    @Enumerated(EnumType.STRING)
     private TxnType txnType;
 
     @Column(precision = 20, scale = 2) // => 정수18자리, 소수점 부분 2자리

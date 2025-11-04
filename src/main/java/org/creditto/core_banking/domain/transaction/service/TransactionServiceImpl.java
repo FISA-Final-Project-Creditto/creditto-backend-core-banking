@@ -1,6 +1,7 @@
 package org.creditto.core_banking.domain.transaction.service;
 
 import lombok.RequiredArgsConstructor;
+import org.creditto.core_banking.domain.transaction.dto.TransactionResponseDto;
 import org.creditto.core_banking.domain.transaction.entity.Transaction;
 import org.creditto.core_banking.domain.transaction.repository.TransactionRepository;
 import org.springframework.stereotype.Service;
@@ -14,7 +15,11 @@ public class TransactionServiceImpl implements TransactionService {
     private final TransactionRepository transactionRepository;
 
     @Override
-    public List<Transaction> findByAccountId(Long accountId) {
-        return transactionRepository.findByAccountId(accountId);
+    public List<TransactionResponseDto> findByAccountId(Long accountId) {
+        List<Transaction> transactions = transactionRepository.findByAccountId(accountId);
+
+        return transactions.stream()
+                .map(TransactionResponseDto::from)
+                .toList();
     }
 }
