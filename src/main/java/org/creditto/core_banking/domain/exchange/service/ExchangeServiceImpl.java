@@ -45,7 +45,7 @@ public class ExchangeServiceImpl implements ExchangeService {
             BigDecimal krwDebitAmount = request.getTargetAmount().multiply(sellRate);
 
             if (account.getBalance().compareTo(krwDebitAmount) < 0) {
-                throw new RuntimeException("계좌 잔액이 부족합니다.");
+                throw new IllegalArgumentException("계좌 잔액이 부족합니다.");
             }
             account.updateBalance(krwDebitAmount.negate()); // 계산된 원화 금액 차감
 
