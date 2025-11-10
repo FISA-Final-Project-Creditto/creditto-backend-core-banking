@@ -26,10 +26,10 @@ public abstract class RegularRemittance {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long regRemId;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     private Account account;
 
-    @OneToOne
+    @OneToOne(fetch = FetchType.LAZY)
     private Recipient recipient;
 
     private String sendCurrency;

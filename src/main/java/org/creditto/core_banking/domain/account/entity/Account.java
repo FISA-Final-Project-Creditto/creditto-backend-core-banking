@@ -3,6 +3,7 @@ package org.creditto.core_banking.domain.account.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.creditto.core_banking.global.common.BaseEntity;
+import org.creditto.core_banking.global.response.error.ErrorBaseCode;
 
 import java.math.BigDecimal;
 
@@ -41,5 +42,12 @@ public class Account extends BaseEntity {
                 .accountState(accountState)
                 .clientId(clientId)
                 .build();
+    }
+
+    public void deductBalance(BigDecimal amount) {
+        if (this.balance.compareTo(amount) < 0) {
+            throw new IllegalArgumentException(ErrorBaseCode.BAD_REQUEST.getMessage());
+        }
+        this.balance = this.balance.subtract(amount);
     }
 }
