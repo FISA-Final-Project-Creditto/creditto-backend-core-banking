@@ -1,5 +1,6 @@
 package org.creditto.core_banking.domain.overseasremittance.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.creditto.core_banking.domain.overseasremittance.dto.OverseasRemittanceRequestDto;
 import org.creditto.core_banking.domain.overseasremittance.dto.OverseasRemittanceResponseDto;
@@ -24,7 +25,7 @@ public class OverseasRemittanceController {
     }
 
     @PostMapping   // 해외송금 처리_일회성 (계좌 잔액 차감 + 송금 이력 저장)
-    public BaseResponse<?> processRemittance(@RequestBody OverseasRemittanceRequestDto request) {
+    public BaseResponse<?> processRemittance(@Valid @RequestBody OverseasRemittanceRequestDto request) {
         var result = overseasRemittanceService.processRemittance(request);
         return BaseResponse.of(SuccessCode.OK, result);
     }

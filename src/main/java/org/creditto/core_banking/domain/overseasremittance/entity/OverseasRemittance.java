@@ -37,7 +37,7 @@ public class OverseasRemittance extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     private RegularRemittance recur;
 
-    private Double exchangeRate;
+    private BigDecimal exchangeRate;
 
     private BigDecimal sendAmount;
 
@@ -52,7 +52,7 @@ public class OverseasRemittance extends BaseEntity {
             String clientId,
             RemittanceFee fee,
             RegularRemittance recur,
-            Double exchangeRate,
+            BigDecimal exchangeRate,
             BigDecimal sendAmount,
             BigDecimal receivedAmount
     ){

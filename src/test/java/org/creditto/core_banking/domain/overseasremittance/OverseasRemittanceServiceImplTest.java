@@ -6,7 +6,7 @@ import org.creditto.core_banking.domain.overseasremittance.dto.OverseasRemittanc
 import org.creditto.core_banking.domain.overseasremittance.dto.OverseasRemittanceResponseDto;
 import org.creditto.core_banking.domain.overseasremittance.entity.OverseasRemittance;
 import org.creditto.core_banking.domain.overseasremittance.repository.OverseasRemittanceRepository;
-import org.creditto.core_banking.domain.overseasremittance.service.OverseasRemittanceServiceImpl;
+import org.creditto.core_banking.domain.overseasremittance.service.OverseasRemittanceService;
 import org.creditto.core_banking.domain.recipient.entity.Recipient;
 import org.creditto.core_banking.domain.recipient.repository.RecipientRepository;
 import org.creditto.core_banking.domain.regularremittance.repository.RegularRemittanceRepository;
@@ -37,7 +37,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-public class OverseasRemittanceServiceImplTest {
+class OverseasRemittanceServiceImplTest {
 
     @Mock
     private OverseasRemittanceRepository overseasRemittanceRepository;
@@ -53,7 +53,7 @@ public class OverseasRemittanceServiceImplTest {
     private RegularRemittanceRepository regularRemittanceRepository;
 
     @InjectMocks
-    private OverseasRemittanceServiceImpl overseasRemittanceService;
+    private OverseasRemittanceService overseasRemittanceService;
 
     // 공통 목 객체
     private String clientId;
@@ -74,7 +74,7 @@ public class OverseasRemittanceServiceImplTest {
             .accountId(1L)
             .recipientId(1L)
             .feeId(1L)
-            .exchangeRate(1300.0)
+            .exchangeRate(BigDecimal.valueOf(1300.0))
             .sendAmount(BigDecimal.valueOf(10_000))
             .build();
     }
@@ -84,9 +84,9 @@ public class OverseasRemittanceServiceImplTest {
     void getRemittanceList_Success() {
         // given
         // setUp()에서 생성된 공통 객체 사용
-        OverseasRemittance mockRemittance1 = OverseasRemittance.of(mockRecipient, mockAccount, clientId, mockFee, null, 1300.0, BigDecimal.valueOf(5_000), null);
-        OverseasRemittance mockRemittance2 = OverseasRemittance.of(mockRecipient, mockAccount, clientId, mockFee, null, 1310.0, BigDecimal.valueOf(6_000), null);
-        OverseasRemittance mockRemittance3 = OverseasRemittance.of(mockRecipient, mockAccount, clientId, mockFee, null, 1320.0, BigDecimal.valueOf(7_000), null);
+        OverseasRemittance mockRemittance1 = OverseasRemittance.of(mockRecipient, mockAccount, clientId, mockFee, null, BigDecimal.valueOf(1300.0), BigDecimal.valueOf(5_000), null);
+        OverseasRemittance mockRemittance2 = OverseasRemittance.of(mockRecipient, mockAccount, clientId, mockFee, null, BigDecimal.valueOf(1310.0), BigDecimal.valueOf(6_000), null);
+        OverseasRemittance mockRemittance3 = OverseasRemittance.of(mockRecipient, mockAccount, clientId, mockFee, null, BigDecimal.valueOf(1320.0), BigDecimal.valueOf(7_000), null);
 
         given(overseasRemittanceRepository.findByClientIdWithDetails(clientId)).willReturn(List.of(mockRemittance1, mockRemittance2, mockRemittance3));
 
@@ -140,7 +140,7 @@ public class OverseasRemittanceServiceImplTest {
         // when & then
         assertThatThrownBy(() -> overseasRemittanceService.processRemittance(baseRequest))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessage(ErrorBaseCode.BAD_REQUEST.getMessage());
+            .hasMessage("잔액이 부족합니다.");
     }
 
     @Test

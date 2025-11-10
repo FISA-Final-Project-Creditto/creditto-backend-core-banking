@@ -12,6 +12,6 @@ import java.util.List;
 public interface OverseasRemittanceRepository extends JpaRepository<OverseasRemittance,Long> {
 
     // FETCH JOIN으로 N+1문제 방지
-    @Query("SELECT r FROM OverseasRemittance r JOIN FETCH r.recipient JOIN FETCH r.account JOIN FETCH r.fee WHERE r.clientId = :clientId")
+    @Query("SELECT r FROM OverseasRemittance r JOIN FETCH r.recipient JOIN FETCH r.account JOIN FETCH r.fee LEFT JOIN FETCH r.recur WHERE r.clientId = :clientId")
     List<OverseasRemittance> findByClientIdWithDetails(@Param("clientId") String clientId);
 }

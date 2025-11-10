@@ -9,7 +9,6 @@ import java.math.BigDecimal;
 
 @Getter
 @Builder
-
 public class OverseasRemittanceResponseDto {
 
     private Long remittanceId;          // 송금 ID
@@ -18,7 +17,7 @@ public class OverseasRemittanceResponseDto {
     private String clientId;            // 클라이언트 ID
     private Long feeId;                 // 수수료 ID
     private Long regRemId;              // 정기송금 ID
-    private Double exchangeRate;        // 환율
+    private BigDecimal exchangeRate;    // 환율
     private BigDecimal sendAmount;      // 송금 금액
     private BigDecimal receivedAmount;  // 수취 금액
     private RemittanceStatus remittanceStatus;  // 처리상태
