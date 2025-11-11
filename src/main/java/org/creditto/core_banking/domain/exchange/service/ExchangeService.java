@@ -26,8 +26,13 @@ public class ExchangeService {
 
     // 환전 시 적용될 스프레드 비율 (1%)
     private static final BigDecimal SPREAD_RATE = new BigDecimal("0.01");
+
     // 환전 시 적용될 환율 우대 비율 (50%)
+    // TODO: 추후 사용자별 우대 환율 업데이트
     private static final BigDecimal PREFERENTIAL_RATE = new BigDecimal("0.5");
+
+    // 원화 통화 코드 상수
+    public static final String KRW_CURRENCY_CODE = "KRW";
 
     /**
      * 외부 API를 통해 최신 환율 정보를 조회합니다.
@@ -54,11 +59,11 @@ public class ExchangeService {
                 .orElseThrow(() -> new IllegalArgumentException("해당 계좌를 찾을 수 없습니다."));
 
         // 원화 -> 외화 환전 로직
-        if ("KRW".equalsIgnoreCase(request.fromCurrency())) {
+        if (KRW_CURRENCY_CODE.equalsIgnoreCase(request.fromCurrency())) {
             return handleKrwToForeignExchange(request, account, rates);
         }
         // 외화 -> 원화 환전 로직
-        else if ("KRW".equalsIgnoreCase(request.toCurrency())) {
+        else if (KRW_CURRENCY_CODE.equalsIgnoreCase(request.toCurrency())) {
             return handleForeignToKrwExchange(request, account, rates);
         }
         // 지원하지 않는 거래 예외 처리
