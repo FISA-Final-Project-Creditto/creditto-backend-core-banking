@@ -21,16 +21,16 @@ public class AccountController {
 
     @GetMapping("/{accountId}/balance")
     public ResponseEntity<BaseResponse<?>> getBalance(@PathVariable Long accountId) {
-        return ApiResponseUtil.success(SuccessCode.OK, accountService.getBalance(accountId));
+        return ApiResponseUtil.success(SuccessCode.OK, accountService.getAccountById(accountId));
     }
 
     @GetMapping("/{accountNo}")
     public ResponseEntity<BaseResponse<?>> getBalance(@PathVariable String accountNo) {
-        return ApiResponseUtil.success(SuccessCode.OK, accountService.findByAccountNo(accountNo));
+        return ApiResponseUtil.success(SuccessCode.OK, accountService.getAccountByAccountNo(accountNo));
     }
 
-    @GetMapping("/{clientId}")
+    @GetMapping("client/{clientId}")
     public ResponseEntity<BaseResponse<?>> findByClientId(@PathVariable String clientId) {
-        return ApiResponseUtil.success(SuccessCode.OK, accountService.findByClientId(clientId));
+        return ApiResponseUtil.success(SuccessCode.OK, accountService.getAccountByClientId(clientId));
     }
 }
