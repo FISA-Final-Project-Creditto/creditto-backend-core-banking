@@ -51,7 +51,7 @@ public class AccountServiceTest {
                 .willReturn(Optional.of(mockAccount));
 
         // when
-        BigDecimal result = accountService.getAccountById(accountId).getBalance();
+        BigDecimal result = accountService.getAccountById(accountId).balance();
 
         // then
         assertThat(result).isEqualTo(BigDecimal.valueOf(100000));
@@ -105,7 +105,7 @@ public class AccountServiceTest {
 
         // then
         assertThat(result.size()).isEqualTo(2);
-        assertThat(result.get(0).getAccountNo()).isEqualTo("ACC001");
-        assertThat(result.get(1).getAccountName()).isEqualTo("적금계좌");
+        assertThat(result.get(0).accountNo()).isEqualTo("ACC001");
+        assertThat(result.get(1).accountName()).isEqualTo("적금계좌");
     }
 }

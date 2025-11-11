@@ -30,8 +30,17 @@ public class ExchangeService {
     private static final BigDecimal PREFERENTIAL_RATE = new BigDecimal("0.5");
 
     /**
-     * 환전 요청을 처리하는 메인 메서드.
-     * 환전 방향에 따라 적절한 private 메서드를 호출하여 처리를 위임합니다.
+     * 외부 API를 통해 최신 환율 정보를 조회합니다.
+     *
+     * @return 최신 환율 정보 리스트
+     */
+    public List<ExchangeRateRes> getLatestRates() {
+        return exchangeRateProvider.getExchangeRates();
+    }
+
+    /**
+     * 환전 요청을 처리하는 메인 메서드
+     * 환전 방향에 따라 적절한 private 메서드를 호출하여 처리를 위임
      *
      * @param request 환전 요청 정보 (계좌 ID, 출발/도착 통화, 대상 금액 등)
      * @return 환전 결과 정보 (출발/도착 통화, 적용 환율, 환전 금액)
