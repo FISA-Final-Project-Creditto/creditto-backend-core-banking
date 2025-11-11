@@ -43,7 +43,19 @@ public class Account extends BaseEntity {
                 .build();
     }
 
-    public void updateBalance(BigDecimal amount) {
+
+    // 입금
+    public void deposit(BigDecimal amount) {
         this.balance = balance.add(amount);
     }
+
+    // 출금
+    public void withdraw(BigDecimal amount) {
+        if (this.balance.compareTo(amount) < 0) {
+            throw new IllegalArgumentException("계좌 잔액이 부족합니다.");
+        }
+
+        this.balance = balance.subtract(amount);
+    }
+
 }

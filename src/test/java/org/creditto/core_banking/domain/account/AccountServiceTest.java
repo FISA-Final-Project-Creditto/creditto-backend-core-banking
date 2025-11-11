@@ -5,7 +5,7 @@ import org.creditto.core_banking.domain.account.entity.Account;
 import org.creditto.core_banking.domain.account.entity.AccountState;
 import org.creditto.core_banking.domain.account.entity.AccountType;
 import org.creditto.core_banking.domain.account.repository.AccountRepository;
-import org.creditto.core_banking.domain.account.service.AccountServiceImpl;
+import org.creditto.core_banking.domain.account.service.AccountService;
 import org.creditto.core_banking.global.response.error.ErrorBaseCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -23,17 +23,17 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
-public class AccountServiceImplTest {
+public class AccountServiceTest {
 
     @Mock
     private AccountRepository accountRepository;
 
     @InjectMocks
-    private AccountServiceImpl accountService;
+    private AccountService accountService;
 
     @Test
     @DisplayName("잔액 조회 성공")
-    void getBalance_Success() {
+    void getBalance_ById_Success() {
         // given
         Long accountId = 1L;
         String accountNo = "ACC001";
@@ -51,7 +51,7 @@ public class AccountServiceImplTest {
                 .willReturn(Optional.of(mockAccount));
 
         // when
-        BigDecimal result = accountService.getBalance(accountId);
+        BigDecimal result = accountService.getAccountById(accountId).getBalance();
 
         // then
         assertThat(result).isEqualTo(BigDecimal.valueOf(100000));
@@ -59,14 +59,14 @@ public class AccountServiceImplTest {
 
     @Test
     @DisplayName("존재하지 않는 계좌 번호로 조회 시 예외 발생")
-    void getBalance_AccountNotFound() {
+    void getBalance_ById_AccountNotFound() {
         // given
         String invalidAccountNo = "ACC999";
         given(accountRepository.findByAccountNo(invalidAccountNo))
                 .willReturn(Optional.empty());
 
         // when & then
-        assertThatThrownBy(() -> accountService.findByAccountNo(invalidAccountNo))
+        assertThatThrownBy(() -> accountService.getAccountByAccountNo(invalidAccountNo))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage(ErrorBaseCode.NOT_FOUND_ENTITY.getMessage());
     }
@@ -101,7 +101,7 @@ public class AccountServiceImplTest {
                 .willReturn(List.of(account1, account2));
         
         // when
-        List<AccountRes> result = accountService.findByClientId(clientId);
+        List<AccountRes> result = accountService.getAccountByClientId(clientId);
 
         // then
         assertThat(result.size()).isEqualTo(2);
