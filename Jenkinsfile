@@ -4,6 +4,10 @@ pipeline {
     stages {
         stage('Build and Test') {
             steps {
+				sh 'chmod +x ./gradlew'
+				sh './gradlew clean'
+				sh './gradlew processResources processTestResources'
+
                 withCredentials([string(credentialsId: 'core_banking_env', variable: 'ENV_CONTENT')]) {
                     sh '''
                         echo "$ENV_CONTENT" > .env
@@ -13,15 +17,36 @@ pipeline {
                     '''
                 }
 
-                sh 'chmod +x ./gradlew'
-                sh './gradlew clean build'
+				sh './gradlew build'
+				sh 'rm .env'
             }
         }
+
+		stage('SonarQube Analysis') {
+			steps {
+				withCredentials([string(credentialsId: 'CORE_SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
+					sh """
+						./gradlew sonar \
+						  -Dsonar.projectKey=core-banking \
+						  -Dsonar.host.url=http://192.168.0.79:8490 \
+						  -Dsonar.login=$SONAR_TOKEN
+					"""
+				}
+			}
+		}
+
+		stage('Quality Gate') {
+			steps {
+				timeout(time: 3, unit: 'MINUTES') {
+					waitForQualityGate abortPipeline: true
+				}
+			}
+		}
     }
 
     post {
       always {
-        junit 'build/test-results/test/*.xml'
+		  junit testResults: 'build/test-results/test/*.xml', allowEmptyResults: true
       }
     }
 }
