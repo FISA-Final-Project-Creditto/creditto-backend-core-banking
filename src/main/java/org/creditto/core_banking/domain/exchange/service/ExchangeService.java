@@ -10,6 +10,8 @@ import org.creditto.core_banking.domain.exchange.dto.ExchangeRes;
 import org.creditto.core_banking.domain.exchange.entity.Exchange;
 import org.creditto.core_banking.domain.exchange.repository.ExchangeRepository;
 import org.creditto.core_banking.global.feign.ExchangeRateProvider;
+import org.creditto.core_banking.global.response.error.ErrorBaseCode;
+import org.creditto.core_banking.global.response.exception.CustomBaseException;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -56,7 +58,7 @@ public class ExchangeService {
         List<ExchangeRateRes> rates = exchangeRateProvider.getExchangeRates();
         // 요청 계좌 정보 조회, 없으면 예외 발생
         Account account = accountRepository.findById(request.accountId())
-                .orElseThrow(() -> new IllegalArgumentException("해당 계좌를 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomBaseException(ErrorBaseCode.NOT_FOUND_ACCOUNT));
 
         // 원화 -> 외화 환전 로직
         if (KRW_CURRENCY_CODE.equalsIgnoreCase(request.fromCurrency())) {
@@ -68,7 +70,7 @@ public class ExchangeService {
         }
         // 지원하지 않는 거래 예외 처리
         else {
-            throw new IllegalArgumentException("현재 지원하지 않는 서비스입니다.");
+            throw new CustomBaseException(ErrorBaseCode.CURRENCY_NOT_SUPPORTED);
         }
     }
 
@@ -139,7 +141,7 @@ public class ExchangeService {
         return rates.stream()
                 .filter(r -> r.getCurrencyUnit().equalsIgnoreCase(currency))
                 .findFirst()
-                .orElseThrow(() -> new RuntimeException("해당 통화(" + currency + ")의 환율 정보를 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomBaseException(ErrorBaseCode.CURRENCY_NOT_SUPPORTED));
     }
 
     /**
