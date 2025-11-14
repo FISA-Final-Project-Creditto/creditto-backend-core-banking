@@ -51,6 +51,25 @@ jobs:
           ./gradlew clean build
         shell: bash
 
+      - name: sonarqube
+        run: |
+          ./gradlew sonar \
+            -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_NAME }} \
+            -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
+            -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+
+        shell: bash
+
+      - name: SonarQube Quality Gate check
+        id: sonarqube-quality-gate-check
+        uses: sonarsource/sonarqube-quality-gate-action@master
+        with:
+          pollingTimeoutSec: 600
+          scanMetadataReportFile: build/sonar/report-task.txt
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
       - name: clean
         run: |
           rm .env
