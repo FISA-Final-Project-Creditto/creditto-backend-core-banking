@@ -9,6 +9,7 @@ import org.creditto.core_banking.domain.exchange.dto.ExchangeReq;
 import org.creditto.core_banking.domain.exchange.dto.ExchangeRes;
 import org.creditto.core_banking.domain.exchange.entity.Exchange;
 import org.creditto.core_banking.domain.exchange.repository.ExchangeRepository;
+import org.creditto.core_banking.global.common.CurrencyCode;
 import org.creditto.core_banking.global.feign.ExchangeRateProvider;
 import org.creditto.core_banking.global.response.error.ErrorBaseCode;
 import org.creditto.core_banking.global.response.exception.CustomBaseException;
@@ -34,7 +35,7 @@ public class ExchangeService {
     private static final BigDecimal PREFERENTIAL_RATE = new BigDecimal("0.5");
 
     // 원화 통화 코드 상수
-    public static final String KRW_CURRENCY_CODE = "KRW";
+    public static final CurrencyCode KRW_CURRENCY_CODE = CurrencyCode.KRW;
 
     /**
      * 외부 API를 통해 최신 환율 정보를 조회합니다.
@@ -56,17 +57,14 @@ public class ExchangeService {
     public ExchangeRes exchange(ExchangeReq request) {
         // 최신 환율 정보 조회
         List<ExchangeRateRes> rates = exchangeRateProvider.getExchangeRates();
-        // 요청 계좌 정보 조회, 없으면 예외 발생
-        Account account = accountRepository.findById(request.accountId())
-                .orElseThrow(() -> new CustomBaseException(ErrorBaseCode.NOT_FOUND_ACCOUNT));
 
         // 원화 -> 외화 환전 로직
-        if (KRW_CURRENCY_CODE.equalsIgnoreCase(request.fromCurrency())) {
-            return handleKrwToForeignExchange(request, account, rates);
+        if (KRW_CURRENCY_CODE.equals(request.fromCurrency())) {
+            return handleKrwToForeignExchange(request,rates);
         }
         // 외화 -> 원화 환전 로직
-        else if (KRW_CURRENCY_CODE.equalsIgnoreCase(request.toCurrency())) {
-            return handleForeignToKrwExchange(request, account, rates);
+        else if (KRW_CURRENCY_CODE.equals(request.toCurrency())) {
+            return handleForeignToKrwExchange(request, rates);
         }
         // 지원하지 않는 거래 예외 처리
         else {
@@ -77,7 +75,7 @@ public class ExchangeService {
     /**
      * 원화에서 외화로의 환전 처리
      */
-    private ExchangeRes handleKrwToForeignExchange(ExchangeReq request, Account account, List<ExchangeRateRes> rates) {
+    private ExchangeRes handleKrwToForeignExchange(ExchangeReq request,List<ExchangeRateRes> rates) {
         // 대상 외화의 매매 기준율 정보 조회
         ExchangeRateRes rateInfo = findRate(rates, request.toCurrency());
         BigDecimal baseRate = new BigDecimal(rateInfo.getBaseRate().replace(",", ""));
@@ -90,14 +88,11 @@ public class ExchangeService {
         BigDecimal toAmount = request.targetAmount();
         BigDecimal fromAmount = toAmount.multiply(appliedRate).setScale(0, RoundingMode.CEILING);
 
-        account.withdraw(fromAmount);
-
         // 환전 내역 저장 및 결과 반환
-        saveExchangeHistory(account, request, fromAmount, toAmount, appliedRate);
+        saveExchangeHistory(request, fromAmount, toAmount, appliedRate);
         return new ExchangeRes(
                 request.fromCurrency(),
                 request.toCurrency(),
-                request.country(),
                 appliedRate.setScale(2, RoundingMode.HALF_UP),
                 fromAmount
         );
@@ -106,7 +101,7 @@ public class ExchangeService {
     /**
      * 외화에서 원화로의 환전 처리
      */
-    private ExchangeRes handleForeignToKrwExchange(ExchangeReq request, Account account, List<ExchangeRateRes> rates) {
+    private ExchangeRes handleForeignToKrwExchange(ExchangeReq request, List<ExchangeRateRes> rates) {
         // 출발 외화의 매매 기준율 정보 조회
         ExchangeRateRes rateInfo = findRate(rates, request.fromCurrency());
         BigDecimal baseRate = new BigDecimal(rateInfo.getBaseRate().replace(",", ""));
@@ -120,15 +115,11 @@ public class ExchangeService {
         // 입금될 원화 금액 계산
         BigDecimal krwReceived = fromAmount.multiply(appliedRate).setScale(0, RoundingMode.FLOOR);
 
-        // 원화 계좌에 입금
-        account.deposit(krwReceived);
-
         // 환전 내역 저장 및 결과 반환
-        saveExchangeHistory(account, request, fromAmount, krwReceived, appliedRate);
+        saveExchangeHistory(request, fromAmount, krwReceived, appliedRate);
         return new ExchangeRes(
                 request.fromCurrency(),
                 request.toCurrency(),
-                request.country(),
                 appliedRate.setScale(2, RoundingMode.HALF_UP),
                 fromAmount
         );
@@ -137,9 +128,9 @@ public class ExchangeService {
     /**
      * 전체 환율 리스트에서 특정 통화에 해당하는 환율 정보를 찾는 메서드
      */
-    private ExchangeRateRes findRate(List<ExchangeRateRes> rates, String currency) {
+    private ExchangeRateRes findRate(List<ExchangeRateRes> rates, CurrencyCode currency) {
         return rates.stream()
-                .filter(r -> r.getCurrencyUnit().equalsIgnoreCase(currency))
+                .filter(r -> r.getCurrencyUnit().equalsIgnoreCase(currency.getCode()))
                 .findFirst()
                 .orElseThrow(() -> new CustomBaseException(ErrorBaseCode.CURRENCY_NOT_SUPPORTED));
     }
@@ -147,14 +138,12 @@ public class ExchangeService {
     /**
      * 환전 내역을 데이터베이스에 저장
      */
-    private void saveExchangeHistory(Account account, ExchangeReq exchangeReq, BigDecimal fromAmount, BigDecimal toAmount, BigDecimal rate) {
+    private void saveExchangeHistory(ExchangeReq exchangeReq, BigDecimal fromAmount, BigDecimal toAmount, BigDecimal rate) {
         Exchange exchange = Exchange.of(
-                account,
                 exchangeReq,
                 fromAmount,
                 toAmount,
-                rate,
-                exchangeReq.country()
+                rate
         );
         exchangeRepository.save(exchange);
     }

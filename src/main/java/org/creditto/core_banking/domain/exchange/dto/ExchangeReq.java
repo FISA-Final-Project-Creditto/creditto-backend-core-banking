@@ -1,12 +1,12 @@
 package org.creditto.core_banking.domain.exchange.dto;
 
+import org.creditto.core_banking.global.common.CurrencyCode;
+
 import java.math.BigDecimal;
 
 public record ExchangeReq(
-    Long accountId,
-    String fromCurrency,
-    String toCurrency,
-    String country,
+    CurrencyCode fromCurrency,
+    CurrencyCode toCurrency,
     BigDecimal targetAmount
 ) {
 }
