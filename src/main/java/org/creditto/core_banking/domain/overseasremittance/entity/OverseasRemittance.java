@@ -21,23 +21,22 @@ public class OverseasRemittance extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long remittanceId;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     private Recipient recipient;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     private Account account;
 
-    // clientId는 accountId를 통해 알 수 있지만
-    // 조회 효율, 이력 데이터의 독립성 등을 고려하여 컬럼을 유지함
-    private Long clientId;
+    private String clientId;
 
-    @OneToOne
+    @OneToOne(fetch = FetchType.LAZY)
     private RemittanceFee fee;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "recur_id")
     private RegularRemittance recur;
 
-    private Double exchangeRate;
+    private BigDecimal exchangeRate;
 
     private BigDecimal sendAmount;
 
@@ -49,10 +48,10 @@ public class OverseasRemittance extends BaseEntity {
     public static OverseasRemittance of(
             Recipient recipient,
             Account account,
-            Long clientId,
+            String clientId,
             RemittanceFee fee,
             RegularRemittance recur,
-            Double exchangeRate,
+            BigDecimal exchangeRate,
             BigDecimal sendAmount,
             BigDecimal receivedAmount
     ){
