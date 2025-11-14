@@ -7,6 +7,7 @@ public enum TxnType {
 
     DEPOSIT("입금"),
     WITHDRAWAL("출금"),
+    EXCHANGE("환전"),
     FEE("수수료");
 
     private final String type;
