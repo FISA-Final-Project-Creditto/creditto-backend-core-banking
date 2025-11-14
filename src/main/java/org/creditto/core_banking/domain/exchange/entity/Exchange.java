@@ -5,6 +5,7 @@ import lombok.*;
 import org.creditto.core_banking.domain.account.entity.Account;
 import org.creditto.core_banking.domain.exchange.dto.ExchangeReq;
 import org.creditto.core_banking.global.common.BaseEntity;
+import org.creditto.core_banking.global.common.CurrencyCode;
 
 import java.math.BigDecimal;
 
@@ -19,15 +20,11 @@ public class Exchange extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "account_id", nullable = false)
-    private Account account;
+    @Enumerated(EnumType.STRING)
+    private CurrencyCode fromCurrency;
 
-    private String fromCurrency; // TODO: 통화코드 Enum으로 변경 예정
-
-    private String toCurrency; // TODO: 통화코드 Enum으로 변경 예정
-
-    private String country; // 수취 국가
+    @Enumerated(EnumType.STRING)
+    private CurrencyCode toCurrency;
 
     @Column(precision = 20, scale = 2)
     private BigDecimal fromAmount;
@@ -40,12 +37,10 @@ public class Exchange extends BaseEntity {
 
 
 
-    public static Exchange of(Account account, ExchangeReq req, BigDecimal fromAmount, BigDecimal toAmount, BigDecimal exchangeRate, String country) {
+    public static Exchange of(ExchangeReq req, BigDecimal fromAmount, BigDecimal toAmount, BigDecimal exchangeRate) {
         return Exchange.builder()
-                .account(account)
                 .fromCurrency(req.fromCurrency())
                 .toCurrency(req.toCurrency())
-                .country(country) // country 필드 추가
                 .fromAmount(fromAmount)
                 .toAmount(toAmount)
                 .exchangeRate(exchangeRate)
