@@ -7,9 +7,10 @@ import java.math.BigDecimal;
 
 // 내부 환전 결과 반환 DTO
 public record ExchangeRes (
-        CurrencyCode fromCurrency,
-        CurrencyCode toCurrency,
+    CurrencyCode fromCurrency,
+    CurrencyCode toCurrency,
     BigDecimal exchangeRate,
-    BigDecimal exchangeAmount
+    BigDecimal exchangeAmount,
+    BigDecimal exchangeRateUSD // USD 환율
 ) {
 }
