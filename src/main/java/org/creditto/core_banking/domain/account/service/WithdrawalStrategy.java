@@ -27,10 +27,10 @@ public class WithdrawalStrategy implements TransactionStrategy {
 
         try {
             TxnResult result = TxnResult.SUCCESS;
-            account.deposit(amount);
+            account.withdraw(amount);
             transactionService.saveTransaction(account, amount, TxnType.WITHDRAWAL, typeId, result);
 
-        } catch (Exception e) {
+        } catch (CustomBaseException e) {
             TxnResult result = TxnResult.FAILURE;
             transactionService.saveTransaction(account, amount, TxnType.WITHDRAWAL, typeId, result);
             throw new CustomBaseException(ErrorBaseCode.TRANSACTION_FAILED);

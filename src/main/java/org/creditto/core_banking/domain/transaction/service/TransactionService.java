@@ -8,6 +8,7 @@ import org.creditto.core_banking.domain.transaction.entity.TxnResult;
 import org.creditto.core_banking.domain.transaction.entity.TxnType;
 import org.creditto.core_banking.domain.transaction.repository.TransactionRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -37,7 +38,10 @@ public class TransactionService {
      * @param txnType 거래 유형
      * @return 저장된 Transaction 엔티티
      */
-    @Transactional
+
+    // saveTransaction 메서드는 주 비즈니스 로직(계좌 입출금 등)의 트랜잭션과 분리되어야 함
+    // 주 트랜잭션이 롤백되더라도, 거래 시도 자체는 로그로 남아야 하기 때문
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public TransactionRes saveTransaction(Account account, BigDecimal amount, TxnType txnType, Long typeId, TxnResult txnResult) {
         // 새로운 Transaction 엔티티 생성
         Transaction transaction = Transaction.of(

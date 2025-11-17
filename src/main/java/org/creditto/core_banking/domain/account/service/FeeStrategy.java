@@ -30,7 +30,7 @@ public class FeeStrategy implements TransactionStrategy {
             account.withdraw(amount);
             transactionService.saveTransaction(account, amount, TxnType.FEE, typeId, result);
 
-        } catch (Exception e) {
+        } catch (CustomBaseException e) {
             TxnResult result = TxnResult.FAILURE;
             transactionService.saveTransaction(account, amount, TxnType.FEE, typeId, result);
             throw new CustomBaseException(ErrorBaseCode.TRANSACTION_FAILED);

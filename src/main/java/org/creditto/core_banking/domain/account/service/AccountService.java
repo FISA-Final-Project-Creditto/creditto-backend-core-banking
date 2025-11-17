@@ -1,6 +1,5 @@
 package org.creditto.core_banking.domain.account.service;
 
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.creditto.core_banking.domain.account.dto.AccountRes;
 import org.creditto.core_banking.domain.account.entity.Account;
@@ -9,6 +8,7 @@ import org.creditto.core_banking.domain.transaction.entity.TxnType;
 import org.creditto.core_banking.global.response.error.ErrorBaseCode;
 import org.creditto.core_banking.global.response.exception.CustomBaseException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;

@@ -30,7 +30,7 @@ public class DepositStrategy implements TransactionStrategy {
             account.deposit(amount);
             transactionService.saveTransaction(account, amount, TxnType.DEPOSIT, typeId, result);
 
-        } catch (Exception e) {
+        } catch (CustomBaseException e) {
             TxnResult result = TxnResult.FAILURE;
             transactionService.saveTransaction(account, amount, TxnType.DEPOSIT, typeId, result);
             throw new CustomBaseException(ErrorBaseCode.TRANSACTION_FAILED);

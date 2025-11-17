@@ -30,7 +30,7 @@ public class ExchangeStrategy implements TransactionStrategy {
             account.withdraw(amount);
             transactionService.saveTransaction(account, amount, TxnType.EXCHANGE, typeId, result);
 
-        } catch (Exception e) {
+        } catch (CustomBaseException e) {
             TxnResult result = TxnResult.FAILURE;
             transactionService.saveTransaction(account, amount, TxnType.EXCHANGE, typeId, result);
             throw new CustomBaseException(ErrorBaseCode.TRANSACTION_FAILED);
