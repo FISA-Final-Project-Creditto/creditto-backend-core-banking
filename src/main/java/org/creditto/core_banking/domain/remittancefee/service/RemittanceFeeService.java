@@ -42,7 +42,7 @@ public class RemittanceFeeService {
         // 각 수수료를 원화 기준으로 계산
 //        BigDecimal flatFeeInKRW = calculateFlatFee(flatFeePolicy, sendAmount, exchangeRate);
         BigDecimal flatFeeInKRW = flatFeePolicy.getFeeAmount();
-        BigDecimal pctFeeInKRW = calculatePctFee(pctFeePolicy, sendAmount, exchangeRate); // 현재 비활성화(isActive = false)
+        BigDecimal pctFeeInKRW = calculatePctFee(pctFeePolicy, sendAmount, exchangeRate, currency); // 현재 비활성화(isActive = false)
         BigDecimal networkFeeInKRW = calculateNetworkFee(networkFeePolicy, exchangeRate);
 
         // 총 수수료 합산
@@ -93,18 +93,26 @@ public class RemittanceFeeService {
 //
 //    }
 
-    private BigDecimal calculatePctFee(PctServiceFee policy, BigDecimal sendAmount, BigDecimal exchangeRate) {
+    private BigDecimal calculatePctFee(PctServiceFee policy, BigDecimal sendAmount, BigDecimal exchangeRate, String currency) {
         // isActive 상태에 따라 분기 처리
         if (policy != null && policy.getIsActive()) {
-            BigDecimal feeRate = policy.getFeeRate();
-            return sendAmount.multiply(feeRate).multiply(exchangeRate).setScale(0, RoundingMode.DOWN);
+            BigDecimal feeRate = policy.getFeeRate().divide(BigDecimal.valueOf(100));
+            BigDecimal calculatedSendAmount = sendAmount;
+            if (currency.equals("JPY")) {
+                calculatedSendAmount = calculatedSendAmount.divide(BigDecimal.valueOf(100));
+            }
+            return calculatedSendAmount.multiply(feeRate).multiply(exchangeRate).setScale(0, RoundingMode.DOWN);
         } else {
             return BigDecimal.ZERO;
-
         }
     }
 
     private BigDecimal calculateNetworkFee(NetworkFee policy, BigDecimal exchangeRate) {
-        return policy.getFeeAmount().multiply(exchangeRate).setScale(0, RoundingMode.HALF_UP);
+        BigDecimal feeAmount = policy.getFeeAmount();
+        BigDecimal calculatedSendAmount = feeAmount;
+        if (policy.getCurrencyCode().equals("JPY")) {
+            calculatedSendAmount = calculatedSendAmount.divide(BigDecimal.valueOf(100));
+        }
+        return calculatedSendAmount.multiply(exchangeRate).setScale(0, RoundingMode.HALF_UP);
     }
 }
