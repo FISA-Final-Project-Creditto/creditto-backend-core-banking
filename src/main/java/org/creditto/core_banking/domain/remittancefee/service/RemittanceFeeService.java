@@ -31,8 +31,9 @@ public class RemittanceFeeService {
         BigDecimal sendAmount = req.sendAmount();
         BigDecimal exchangeRate = req.exchangeRate();
         String currency = req.currency();
+        BigDecimal exchangeRateUSD = req.exchangeRateUSD();
 
-        BigDecimal sendAmountInUSD = getSendAmountInUSD(sendAmount, currency);
+        BigDecimal sendAmountInUSD = getSendAmountInUSD(sendAmount, exchangeRate, currency, exchangeRateUSD);
 
         // 수수료 계산에 사용될 각 정책 엔티티 조회
         FlatServiceFee flatFeePolicy = getFlatFeePolicy(sendAmountInUSD);
@@ -40,7 +41,6 @@ public class RemittanceFeeService {
         NetworkFee networkFeePolicy = getNetworkFeePolicy(currency);
 
         // 각 수수료를 원화 기준으로 계산
-//        BigDecimal flatFeeInKRW = calculateFlatFee(flatFeePolicy, sendAmount, exchangeRate);
         BigDecimal flatFeeInKRW = flatFeePolicy.getFeeAmount();
         BigDecimal pctFeeInKRW = calculatePctFee(pctFeePolicy, sendAmount, exchangeRate, currency); // 현재 비활성화(isActive = false)
         BigDecimal networkFeeInKRW = calculateNetworkFee(networkFeePolicy, exchangeRate);
@@ -60,12 +60,27 @@ public class RemittanceFeeService {
         return feeRecordRepository.save(feeRecord);
     }
 
-    private BigDecimal getSendAmountInUSD(BigDecimal sendAmount, String currency) {
-        // TODO: JPY -> USD / CNY -> USD를 계산하기 위한 KRW -> USD 필요. 추후 교체 예정
-        if (currency.equals("JPY")) return sendAmount.multiply(BigDecimal.valueOf(0.0065));
-        else if (currency.equals("CNY")) return sendAmount.multiply(BigDecimal.valueOf(0.13));
+    private BigDecimal getSendAmountInUSD(BigDecimal sendAmount, BigDecimal exchangeRate, String currency, BigDecimal exchangeRateUSD) {
+        if (exchangeRateUSD == null || exchangeRateUSD.compareTo(BigDecimal.ZERO) == 0) {
+            throw new IllegalArgumentException("exchangeRateUSD cannot be null or zero.");
+        }
 
-        return sendAmount;
+        int calculationScale = 10;
+        RoundingMode rounding = RoundingMode.HALF_UP;
+
+        // JPY이면 100으로 나누기
+        BigDecimal baseRate;
+        if (currency.equals("JPY")) {
+            baseRate = exchangeRate.divide(BigDecimal.valueOf(100), calculationScale, rounding);
+        } else {
+            baseRate = exchangeRate;
+        }
+
+        BigDecimal calculatedRate = baseRate.divide(exchangeRateUSD, calculationScale, rounding);
+
+        BigDecimal sendAmountInUSD = sendAmount.multiply(calculatedRate);
+
+        return sendAmountInUSD.setScale(2, RoundingMode.HALF_UP);
     }
 
     private FlatServiceFee getFlatFeePolicy(BigDecimal sendAmountInUSD) {
@@ -83,16 +98,6 @@ public class RemittanceFeeService {
                 .orElseThrow(() -> new CustomException("Network fee not found for currency: " + currency));
     }
 
-//    private BigDecimal calculateFlatFee(FlatServiceFee policy, BigDecimal sendAmount, BigDecimal exchangeRate) {
-//        BigDecimal feeAmountInForeignCurrency = flatServiceFeeRepository.findFirstByUpperLimitGreaterThanEqualOrderByUpperLimitAsc(sendAmount)
-//                .map(FlatServiceFee::getFeeAmount)
-//                .orElseThrow(() -> new CustomException("Flat service fee tier not found for amount: " + sendAmount));
-//
-//        // RoundingMode.HALF_UP 할지 DOWN 할지 고민 - 논의 필요
-//        return feeAmountInForeignCurrency.multiply(exchangeRate).setScale(0, RoundingMode.HALF_UP);
-//
-//    }
-
     private BigDecimal calculatePctFee(PctServiceFee policy, BigDecimal sendAmount, BigDecimal exchangeRate, String currency) {
         // isActive 상태에 따라 분기 처리
         if (policy != null && policy.getIsActive()) {
@@ -101,7 +106,8 @@ public class RemittanceFeeService {
             if (currency.equals("JPY")) {
                 calculatedSendAmount = calculatedSendAmount.divide(BigDecimal.valueOf(100));
             }
-            return calculatedSendAmount.multiply(feeRate).multiply(exchangeRate).setScale(0, RoundingMode.DOWN);
+            // RoundingMode.HALF_UP 할지 DOWN 할지 고민 - 논의 필요
+            return calculatedSendAmount.multiply(feeRate).multiply(exchangeRate).setScale(0, RoundingMode.HALF_UP);
         } else {
             return BigDecimal.ZERO;
         }
@@ -113,6 +119,7 @@ public class RemittanceFeeService {
         if (policy.getCurrencyCode().equals("JPY")) {
             calculatedSendAmount = calculatedSendAmount.divide(BigDecimal.valueOf(100));
         }
+        // RoundingMode.HALF_UP 할지 DOWN 할지 고민 - 논의 필요
         return calculatedSendAmount.multiply(exchangeRate).setScale(0, RoundingMode.HALF_UP);
     }
 }
