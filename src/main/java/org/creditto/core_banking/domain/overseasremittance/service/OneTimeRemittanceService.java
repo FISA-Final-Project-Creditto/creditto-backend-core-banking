@@ -3,7 +3,6 @@ package org.creditto.core_banking.domain.overseasremittance.service;
 import lombok.RequiredArgsConstructor;
 import org.creditto.core_banking.domain.account.entity.Account;
 import org.creditto.core_banking.domain.account.repository.AccountRepository;
-import org.creditto.core_banking.domain.exchange.service.ExchangeService;
 import org.creditto.core_banking.domain.overseasremittance.dto.ExecuteRemittanceCommand;
 import org.creditto.core_banking.domain.overseasremittance.dto.OverseasRemittanceRequestDto;
 import org.creditto.core_banking.domain.overseasremittance.dto.OverseasRemittanceResponseDto;
@@ -25,7 +24,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class OneTimeRemittanceService {
 
     private final RemittanceProcessorService remittanceProcessorService;
-    private final ExchangeService exchangeService;
     private final AccountRepository accountRepository;
     private final RecipientRepository recipientRepository;
 
@@ -36,11 +34,11 @@ public class OneTimeRemittanceService {
      * @return 송금 처리 결과
      */
     public OverseasRemittanceResponseDto processRemittance(OverseasRemittanceRequestDto request) {
-        // 1. 출금 계좌 조회 및 ID 확보
+        // 출금 계좌 조회 및 ID 확보
         Account account = accountRepository.findByAccountNo(request.getAccountNumber())
                 .orElseThrow(() -> new CustomBaseException(ErrorBaseCode.NOT_FOUND_ACCOUNT));
 
-        // 2. 수취인 정보 처리 (항상 신규 생성)
+        // 수취인 정보 처리 (항상 신규 생성)
         OverseasRemittanceRequestDto.RecipientInfo recipientInfo = request.getRecipientInfo();
         Recipient newRecipient = Recipient.of(
                 recipientInfo.getName(),
@@ -54,7 +52,7 @@ public class OneTimeRemittanceService {
         );
         Recipient savedRecipient = recipientRepository.save(newRecipient);
 
-        // 3. ExecuteRemittanceCommand 생성
+        // ExecuteRemittanceCommand 생성
         ExecuteRemittanceCommand command = ExecuteRemittanceCommand.builder()
                 .clientId(request.getClientId())
                 .recipientId(savedRecipient.getRecipientId())
@@ -66,7 +64,7 @@ public class OneTimeRemittanceService {
                 .startDate(request.getStartDate())
                 .build();
 
-        // 6. Command 실행 위임: 생성된 Command를 통해 실제 송금 로직 실행
+        // Command 실행 위임: 생성된 Command를 통해 실제 송금 로직 실행
         return remittanceProcessorService.execute(command);
     }
 }

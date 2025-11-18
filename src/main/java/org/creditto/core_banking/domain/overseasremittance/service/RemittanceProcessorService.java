@@ -52,14 +52,15 @@ public class RemittanceProcessorService {
     /**
      * 전달된 Command를 기반으로 해외송금의 모든 단계를 실행합니다.
      * 1. Command에 포함된 ID를 사용하여 관련 엔티티(계좌, 수취인 등)를 조회합니다.
-     * 2. 출금될 총액(송금액 + 수수료)을 계산하고, 계좌 잔액을 확인합니다.
-     * 3. 환전(Exchange) 엔티티를 생성하고 저장합니다.
+     * 2. ExchangeService를 통해 환전 처리 및 결과(DTO)를 수신합니다.
+     * 3. RemittanceFeeService를 통해 수수료를 계산하고, 계좌 잔액을 확인합니다.
      * 4. 해외송금(OverseasRemittance) 엔티티를 생성하고 저장합니다.
      * 5. 실제 계좌에서 수수료 및 송금액을 출금하고, 각 출금에 대한 거래(Transaction) 내역을 생성합니다.
      *
      * @param command 송금 실행에 필요한 모든 데이터가 포함된 Command 객체
      * @return 송금 처리 결과를 담은 응답 DTO
-     * @throws IllegalArgumentException 관련 엔티티를 찾을 수 없거나 잔액이 부족할 경우 발생
+     * @throws CustomBaseException 잔액이 부족하거나 지원하지 않는 통화인 경우 발생
+     * @throws IllegalArgumentException 관련 엔티티를 찾을 수 없는 경우 발생
      */
     public OverseasRemittanceResponseDto execute(ExecuteRemittanceCommand command) {
 
