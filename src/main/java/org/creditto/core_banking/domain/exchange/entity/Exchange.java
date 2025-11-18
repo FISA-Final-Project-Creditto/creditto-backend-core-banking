@@ -32,7 +32,7 @@ public class Exchange extends BaseEntity {
     @Column(precision = 20, scale = 2)
     private BigDecimal toAmount;
 
-    @Column(precision = 20, scale = 6)
+    @Column(precision = 20, scale = 2)
     private BigDecimal exchangeRate; // 제공 환율
 
 

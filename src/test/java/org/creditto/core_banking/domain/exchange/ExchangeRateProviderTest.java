@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -26,12 +26,12 @@ public class ExchangeRateProviderTest {
     @DisplayName("외부 환율 API 호출 및 데이터 수신 테스트")
     void getExchangeRates_APICall_Success() {
         // when: ExchangeRateProvider를 통해 실제 외부 API 호출
-        List<ExchangeRateRes> rates = exchangeRateProvider.getExchangeRates();
+        Map<String, ExchangeRateRes> rates = exchangeRateProvider.getExchangeRates();
 
         assertThat(rates).isNotNull().isNotEmpty();
 
         System.out.println("Successfully fetched " + rates.size() + " exchange rates.");
-        rates.forEach(rate -> {
+        rates.values().forEach(rate -> {
             try {
                 // 각 환율 정보를 보기 좋은 JSON 형태로 출력
                 System.out.println(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(rate));
