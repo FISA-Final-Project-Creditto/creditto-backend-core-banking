@@ -2,7 +2,6 @@ package org.creditto.core_banking.domain.overseasremittance;
 
 import org.creditto.core_banking.domain.account.entity.Account;
 import org.creditto.core_banking.domain.account.repository.AccountRepository;
-import org.creditto.core_banking.domain.exchange.dto.ExchangeRateRes;
 import org.creditto.core_banking.domain.exchange.service.ExchangeService;
 import org.creditto.core_banking.domain.overseasremittance.dto.ExecuteRemittanceCommand;
 import org.creditto.core_banking.domain.overseasremittance.dto.OverseasRemittanceRequestDto;
@@ -12,7 +11,7 @@ import org.creditto.core_banking.domain.overseasremittance.service.OneTimeRemitt
 import org.creditto.core_banking.domain.overseasremittance.service.RemittanceProcessorService;
 import org.creditto.core_banking.domain.recipient.entity.Recipient;
 import org.creditto.core_banking.domain.recipient.repository.RecipientRepository;
-import org.creditto.core_banking.domain.remittancefee.entity.FeeRecord;
+import org.creditto.core_banking.global.common.CurrencyCode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -23,7 +22,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -53,7 +51,6 @@ class OneTimeRemittanceServiceTest {
     private String clientId;
     private Account mockAccount;
     private Recipient mockRecipient;
-    private FeeRecord mockFee;
     private OverseasRemittanceRequestDto baseRequest;
     private OverseasRemittanceRequestDto.RecipientInfo mockRecipientInfo;
 
@@ -61,8 +58,7 @@ class OneTimeRemittanceServiceTest {
     void setUp() {
         clientId = "testClient";
         mockAccount = Account.of("1002-123-456789", "예금계좌", BigDecimal.valueOf(600_000), DEPOSIT , ACTIVE, clientId);
-        mockRecipient = Recipient.of("John Doe", "310-555-1234", null, "Test Bank", "CHASUS33XXX", "1234567890", "USA", "USD");
-        mockFee = FeeRecord.of("USA", "USD", BigDecimal.valueOf(500), BigDecimal.valueOf(100));
+        mockRecipient = Recipient.of("John Doe", "310-555-1234", null, "Test Bank", "CHASUS33XXX", "1234567890", "USA", CurrencyCode.USD);
 
         mockRecipientInfo = OverseasRemittanceRequestDto.RecipientInfo.builder()
                 .name("John Doe")
@@ -77,8 +73,8 @@ class OneTimeRemittanceServiceTest {
             .clientId(clientId)
             .accountNumber(mockAccount.getAccountNo()) // 변경: accountId -> accountNumber
             .recipientInfo(mockRecipientInfo) // 변경: recipientId -> RecipientInfo
-            .sendCurrency("KRW")
-            .receiveCurrency("USD")
+            .sendCurrency(CurrencyCode.KRW)
+            .receiveCurrency(CurrencyCode.USD)
             .sendAmount(BigDecimal.valueOf(10_000))
             .startDate(LocalDate.now())
             .build();
@@ -86,9 +82,6 @@ class OneTimeRemittanceServiceTest {
         // Mocking behavior for dependencies
         given(accountRepository.findByAccountNo(mockAccount.getAccountNo())).willReturn(Optional.of(mockAccount));
         given(recipientRepository.save(any(Recipient.class))).willReturn(mockRecipient);
-        given(exchangeService.getLatestRates()).willReturn(List.of(
-            ExchangeRateRes.builder().currencyUnit("USD").baseRate("1300.0").build()
-        ));
     }
 
     @Test
