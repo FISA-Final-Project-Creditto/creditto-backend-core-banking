@@ -7,6 +7,7 @@ public abstract class ErrorMessage {
      */
     public static final String USER_NOT_FOUND = "해당 유저를 찾을 수 없습니다.";
     public static final String NOT_DEFINED_VALUE = "정의되지 않은 값입니다.";
+    public static final String FEE_NOT_FOUND = "수수료 정책을 찾을 수 없습니다.";
 
     /**
      * INVALID - 유효하지 않음

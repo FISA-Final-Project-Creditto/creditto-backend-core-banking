@@ -9,7 +9,7 @@ import java.math.BigDecimal;
 @Entity
 @Table(name = "fee_record")
 @Getter
-@Builder
+@Builder(access = AccessLevel.PRIVATE)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PROTECTED)
 public class FeeRecord extends BaseEntity {
@@ -32,4 +32,12 @@ public class FeeRecord extends BaseEntity {
     @JoinColumn(name = "network_fee_id")
     private NetworkFee appliedNetworkFee;
 
+    public static FeeRecord create(BigDecimal totalFee, FlatServiceFee flatServiceFee, PctServiceFee pctServiceFee, NetworkFee networkFee) {
+        return FeeRecord.builder()
+                .totalFee(totalFee)
+                .appliedFlatServiceFee(flatServiceFee)
+                .appliedPctServiceFee(pctServiceFee)
+                .appliedNetworkFee(networkFee)
+                .build();
+    }
 }

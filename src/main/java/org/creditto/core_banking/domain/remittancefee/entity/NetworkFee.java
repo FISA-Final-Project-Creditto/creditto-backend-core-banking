@@ -1,11 +1,9 @@
 package org.creditto.core_banking.domain.remittancefee.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.*;
 import org.creditto.core_banking.global.common.BaseEntity;
+import org.creditto.core_banking.global.common.CurrencyCode;
 
 import java.math.BigDecimal;
 
@@ -20,13 +18,14 @@ public class NetworkFee extends BaseEntity {
     private Long networkFeeId;
 
     // TODO: 통화 코드 Enum 타입으로 변경
-    private String currencyCode;
+    @Enumerated(EnumType.STRING)
+    private CurrencyCode currencyCode;
 
     private BigDecimal feeAmount;
 
     public static NetworkFee of(
             Long networkFeeId,
-            String currencyCode,
+            CurrencyCode currencyCode,
             BigDecimal feeAmount
     ) {
         return NetworkFee.builder()
