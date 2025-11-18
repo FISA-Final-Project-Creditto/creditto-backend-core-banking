@@ -52,13 +52,13 @@ public class OverseasRemittanceRequestDto {
     /**
      * 보내는 통화 (e.g. "KRW")
      */
-    @NotBlank(message = "송금 통화는 필수입니다.")
+    @NotNull(message = "송금 통화는 필수입니다.")
     private CurrencyCode sendCurrency;
 
     /**
      * 받는 통화 (e.g. "USD")
      */
-    @NotBlank(message = "수취 통화는 필수입니다.")
+    @NotNull(message = "수취 통화는 필수입니다.")
     private CurrencyCode receiveCurrency;
 
     /**
