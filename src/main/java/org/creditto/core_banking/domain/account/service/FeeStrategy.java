@@ -12,21 +12,19 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 
 @Component
-@RequiredArgsConstructor
-public class FeeStrategy implements TransactionStrategy {
+public class FeeStrategy extends AbstractTransactionStrategy {
 
-    private final TransactionService transactionService;
+    public FeeStrategy(TransactionService transactionService) {
+        super(transactionService);
+    }
+
+    @Override
+    protected void process(Account account, BigDecimal amount, Long typeId) {
+        account.withdraw(amount);
+    }
 
     @Override
     public TxnType getTxnType() {
         return TxnType.FEE;
-    }
-
-    @Override
-    public void execute(Account account, BigDecimal amount, Long typeId) {
-
-        TxnResult result = TxnResult.SUCCESS;
-        account.withdraw(amount);
-        transactionService.saveTransaction(account, amount, getTxnType(), typeId, result);
     }
 }
