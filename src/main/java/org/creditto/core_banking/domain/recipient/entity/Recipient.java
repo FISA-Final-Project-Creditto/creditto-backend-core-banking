@@ -7,6 +7,7 @@ import jakarta.persistence.Id;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 import org.creditto.core_banking.global.common.BaseEntity;
+import org.creditto.core_banking.global.common.CurrencyCode;
 
 @Entity
 @Getter
@@ -37,8 +38,7 @@ public class Recipient extends BaseEntity {
     private String country;
 
     // ex)KRW
-    @Size(min = 3, max = 3)
-    private String currencyCode;
+    private CurrencyCode currencyCode;
 
     public static Recipient of(
             String name,
@@ -48,7 +48,7 @@ public class Recipient extends BaseEntity {
             String bankCode,
             String accountNo,
             String country,
-            String currencyCode
+            CurrencyCode currencyCode
     ){
         return Recipient.builder()
                 .name(name)
