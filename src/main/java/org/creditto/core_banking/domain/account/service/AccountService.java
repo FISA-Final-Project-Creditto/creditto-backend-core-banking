@@ -32,19 +32,15 @@ public class AccountService {
      * @return 생성된 계좌 정보를 담은 AccountRes DTO
      */
     @Transactional
-    public AccountRes createAccount(AccountCreateReq request) {
-        String accountNo;
-        do {
-            accountNo = Account.generateAccountNo(request.accountType());
-        } while (accountRepository.findByAccountNo(accountNo).isPresent());
-
+    public AccountRes createAccount(AccountCreateReq request, String externalUserId) {
+        // accountNo는 Account 엔티티의 @PrePersist 메서드에서 생성
         Account account = Account.of(
-                accountNo,
+                null, // accountNo는 @PrePersist에서 설정되므로 null로 전달
                 request.accountName(),
                 BigDecimal.ZERO,
                 request.accountType(),
                 AccountState.ACTIVE,
-                request.clientId()
+                externalUserId
         );
 
         Account savedAccount = accountRepository.save(account);

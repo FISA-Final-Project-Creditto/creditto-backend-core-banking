@@ -50,35 +50,35 @@ class AccountServiceTest {
         // Given
         AccountCreateReq request = new AccountCreateReq(
                 "새로운 계좌",
-                AccountType.DEPOSIT,
-                "CLIENT002"
+                AccountType.DEPOSIT
         );
 
-        // Account.generateAccountNo는 static 메서드이므로 Mockito로 직접 모킹하기 어렵습니다.
-        // 대신, accountRepository.save()가 반환할 Account 객체를 미리 정의하여 테스트합니다.
-        // 실제 generateAccountNo 로직은 Account 엔티티 자체의 단위 테스트에서 검증하는 것이 좋습니다.
-        String generatedAccountNo = Account.generateAccountNo(request.accountType()); // 실제 로직을 통해 생성
+        String externalUserId = "externalUserId";
+
+        // accountNo는 @PrePersist를 통해 엔티티 내부에서 생성되므로,
+        // 테스트에서는 accountRepository.save()가 반환할 Account 객체를 미리 정의하여 모킹합니다.
+        String expectedAccountNo = "MOCKED_ACCOUNT_NO"; // 테스트를 위한 가상의 계좌 번호
         Account mockSavedAccount = Account.of(
-                generatedAccountNo,
+                expectedAccountNo, // @PrePersist에 의해 생성될 것으로 예상되는 계좌 번호
                 request.accountName(),
                 BigDecimal.ZERO,
                 request.accountType(),
                 AccountState.ACTIVE,
-                request.clientId()
+                externalUserId
         );
         // ID는 save 시점에 부여된다고 가정
         given(accountRepository.save(any(Account.class))).willReturn(mockSavedAccount);
 
         // When
-        AccountRes result = accountService.createAccount(request);
+        AccountRes result = accountService.createAccount(request, externalUserId);
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.accountNo()).isEqualTo(generatedAccountNo);
+        assertThat(result.accountNo()).isEqualTo(expectedAccountNo);
         assertThat(result.accountName()).isEqualTo(request.accountName());
         assertThat(result.accountType()).isEqualTo(request.accountType());
         assertThat(result.accountState()).isEqualTo(AccountState.ACTIVE);
-        assertThat(result.clientId()).isEqualTo(request.clientId());
+        assertThat(result.clientId()).isEqualTo(externalUserId);
 
     }
 

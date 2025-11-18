@@ -16,9 +16,10 @@ public class AccountController {
 
     private final AccountService accountService;
 
-    @PostMapping
-    public ResponseEntity<BaseResponse<?>> createAccount(@RequestBody AccountCreateReq request) {
-        return ApiResponseUtil.success(SuccessCode.CREATED, accountService.createAccount(request));
+    @PostMapping("/{externalUserId}")
+    public ResponseEntity<BaseResponse<?>> createAccount(@RequestBody AccountCreateReq request,
+                                                         @PathVariable String externalUserId) {
+        return ApiResponseUtil.success(SuccessCode.CREATED, accountService.createAccount(request, externalUserId));
     }
 
     @GetMapping("/{accountId}/balance")

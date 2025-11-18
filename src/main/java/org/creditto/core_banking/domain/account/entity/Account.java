@@ -38,7 +38,7 @@ public class Account extends BaseEntity {
 
     public static Account of(String accountNo, String accountName, BigDecimal balance, AccountType accountType, AccountState accountState, String clientId) {
         return Account.builder()
-                .accountNo(accountNo)
+                .accountNo(accountNo) // accountNo는 null이 될 수 있으며, @PrePersist에서 생성됩니다.
                 .accountName(accountName)
                 .balance(balance)
                 .accountType(accountType)
@@ -56,9 +56,17 @@ public class Account extends BaseEntity {
     private static final int ACCOUNT_NO_LENGTH = 13;
     private static final SecureRandom RANDOM = new SecureRandom();
 
+    @PrePersist
+    protected void prePersist() {
+        generateAccountNo();
+    }
+
     // 계좌 번호 생성
-    public static String generateAccountNo(AccountType accountType) {
-        String prefix = ACCOUNT_TYPES_SETTING.get(accountType);
+    private void generateAccountNo() {
+        if (this.accountNo != null) {
+            return; // 이미 계좌 번호가 있으면 다시 생성하지 않음
+        }
+        String prefix = ACCOUNT_TYPES_SETTING.get(this.accountType);
         if (prefix == null) {
             throw new CustomBaseException(ErrorBaseCode.INVALID_ACCOUNT_TYPE);
         }
@@ -68,7 +76,7 @@ public class Account extends BaseEntity {
         for (int i = 0; i < length; i++) {
             sb.append(RANDOM.nextInt(10));
         }
-        return sb.toString();
+        this.accountNo = sb.toString();
     }
 
 

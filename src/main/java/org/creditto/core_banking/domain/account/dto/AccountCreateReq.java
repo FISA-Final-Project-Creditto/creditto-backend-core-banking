@@ -5,7 +5,6 @@ import org.creditto.core_banking.domain.account.entity.AccountType;
 
 public record AccountCreateReq(
         String accountName,
-        AccountType accountType,
-        String clientId
+        AccountType accountType
 ) {
 }
