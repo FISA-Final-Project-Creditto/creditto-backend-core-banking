@@ -16,7 +16,6 @@ import java.time.LocalDate;
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PROTECTED)
-
 public class RemittanceFee extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
