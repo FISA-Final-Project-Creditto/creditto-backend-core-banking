@@ -1,5 +1,6 @@
 package org.creditto.core_banking.domain.remittancefee.service;
 
+import jakarta.persistence.EntityNotFoundException;
 import org.creditto.core_banking.domain.remittancefee.dto.RemittanceFeeReq;
 import org.creditto.core_banking.domain.remittancefee.entity.FeeRecord;
 import org.creditto.core_banking.domain.remittancefee.entity.FlatServiceFee;
@@ -9,7 +10,7 @@ import org.creditto.core_banking.domain.remittancefee.repository.FeeRecordReposi
 import org.creditto.core_banking.domain.remittancefee.repository.FlatServiceFeeRepository;
 import org.creditto.core_banking.domain.remittancefee.repository.NetworkFeeRepository;
 import org.creditto.core_banking.domain.remittancefee.repository.PctServiceFeeRepository;
-import org.creditto.core_banking.global.response.exception.CustomException;
+import org.creditto.core_banking.global.common.CurrencyCode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -26,6 +27,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.creditto.core_banking.global.response.error.ErrorMessage.FEE_NOT_FOUND;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -67,9 +69,9 @@ class RemittanceFeeServiceTest {
         flatFeePolicy = FlatServiceFee.of(1L, new BigDecimal("3000"), new BigDecimal("7500"));
         pctFeePolicyInactive = PctServiceFee.of(1L, new BigDecimal("0.2"), false);
         pctFeePolicyActive = PctServiceFee.of(1L, new BigDecimal("0.2"), true);
-        networkFeePolicyUSD = NetworkFee.of(1L, "USD", new BigDecimal("15"));
-        networkFeePolicyJPY = NetworkFee.of(2L, "JPY", new BigDecimal("2000"));
-        networkFeePolicyCNY = NetworkFee.of(3L, "CNY", new BigDecimal("100"));
+        networkFeePolicyUSD = NetworkFee.of(1L, CurrencyCode.USD, new BigDecimal("15"));
+        networkFeePolicyJPY = NetworkFee.of(2L, CurrencyCode.JPY, new BigDecimal("2000"));
+        networkFeePolicyCNY = NetworkFee.of(3L, CurrencyCode.CNY, new BigDecimal("100"));
     }
 
     @Nested
@@ -82,12 +84,10 @@ class RemittanceFeeServiceTest {
             // given
             BigDecimal sendAmount = new BigDecimal("3000");
             BigDecimal exchangeRate = new BigDecimal("1458.86");
-            String currency = "USD";
+            CurrencyCode currency = CurrencyCode.USD;
             BigDecimal exchangeRateUSD = new BigDecimal("1458.86");
             RemittanceFeeReq req = new RemittanceFeeReq(exchangeRate, sendAmount, currency, exchangeRateUSD);
 
-//            when(flatServiceFeeRepository.findFirstByUpperLimitGreaterThanEqualOrderByUpperLimitAsc(sendAmount))
-//                    .thenReturn(Optional.of(flatFeePolicy));
             when(flatServiceFeeRepository.findFirstByUpperLimitGreaterThanEqualOrderByUpperLimitAsc(any(BigDecimal.class)))
                     .thenAnswer(invocation -> {
                         BigDecimal amountInUSD = invocation.getArgument(0, BigDecimal.class);
@@ -121,14 +121,10 @@ class RemittanceFeeServiceTest {
             // given
             BigDecimal sendAmount = new BigDecimal("77000"); // 77000엔
             BigDecimal exchangeRate = new BigDecimal("942.48"); // 100엔 = 942.48원
-            String currency = "JPY";
+            CurrencyCode currency = CurrencyCode.JPY;
             BigDecimal exchangeRateUSD = new BigDecimal("1458.86");
             RemittanceFeeReq req = new RemittanceFeeReq(exchangeRate, sendAmount, currency, exchangeRateUSD);
 
-            BigDecimal sendAmountInUSD = sendAmount.multiply(new BigDecimal(0.6460386877)).setScale(2, RoundingMode.HALF_UP);
-
-//            when(flatServiceFeeRepository.findFirstByUpperLimitGreaterThanEqualOrderByUpperLimitAsc(sendAmountInUSD))
-//                    .thenReturn(Optional.of(flatFeePolicy));
             when(flatServiceFeeRepository.findFirstByUpperLimitGreaterThanEqualOrderByUpperLimitAsc(any(BigDecimal.class)))
                     .thenAnswer(invocation -> {
                         BigDecimal amountInUSD = invocation.getArgument(0, BigDecimal.class);
@@ -162,15 +158,10 @@ class RemittanceFeeServiceTest {
             // given
             BigDecimal sendAmount = new BigDecimal("3500"); // 3500위안
             BigDecimal exchangeRate = new BigDecimal("205.35"); // 1위안 = 205.35원
-            String currency = "CNH";
+            CurrencyCode currency = CurrencyCode.CNY;
             BigDecimal exchangeRateUSD = new BigDecimal("1458.86");
             RemittanceFeeReq req = new RemittanceFeeReq(exchangeRate, sendAmount, currency, exchangeRateUSD);
 
-            // CNY -> USD 변환: 5000 * 0.13 = 650
-            BigDecimal sendAmountInUSD = sendAmount.multiply(new BigDecimal(0.1407605938883786)).setScale(2, RoundingMode.HALF_UP);
-
-//            when(flatServiceFeeRepository.findFirstByUpperLimitGreaterThanEqualOrderByUpperLimitAsc(sendAmountInUSD))
-//                    .thenReturn(Optional.of(flatFeePolicy));
             when(flatServiceFeeRepository.findFirstByUpperLimitGreaterThanEqualOrderByUpperLimitAsc(any(BigDecimal.class)))
                     .thenAnswer(invocation -> {
                         BigDecimal amountInUSD = invocation.getArgument(0, BigDecimal.class);
@@ -204,12 +195,10 @@ class RemittanceFeeServiceTest {
             // given
             BigDecimal sendAmount = new BigDecimal("3000");
             BigDecimal exchangeRate = new BigDecimal("1458.86");
-            String currency = "USD";
+            CurrencyCode currency = CurrencyCode.USD;
             BigDecimal exchangeRateUSD = new BigDecimal("1458.86");
             RemittanceFeeReq req = new RemittanceFeeReq(exchangeRate, sendAmount, currency, exchangeRateUSD);
 
-//            when(flatServiceFeeRepository.findFirstByUpperLimitGreaterThanEqualOrderByUpperLimitAsc(sendAmount))
-//                    .thenReturn(Optional.of(flatFeePolicy));
             when(flatServiceFeeRepository.findFirstByUpperLimitGreaterThanEqualOrderByUpperLimitAsc(any(BigDecimal.class)))
                     .thenAnswer(invocation -> {
                         BigDecimal amountInUSD = invocation.getArgument(0, BigDecimal.class);
@@ -243,14 +232,10 @@ class RemittanceFeeServiceTest {
             // given
             BigDecimal sendAmount = new BigDecimal("77000"); // 77000엔
             BigDecimal exchangeRate = new BigDecimal("942.48"); // 100엔 = 942.48원
-            String currency = "JPY";
+            CurrencyCode currency = CurrencyCode.JPY;
             BigDecimal exchangeRateUSD = new BigDecimal("1458.86");
             RemittanceFeeReq req = new RemittanceFeeReq(exchangeRate, sendAmount, currency, exchangeRateUSD);
 
-            BigDecimal sendAmountInUSD = sendAmount.multiply(new BigDecimal(0.6460386877)).setScale(2, RoundingMode.HALF_UP);
-
-//            when(flatServiceFeeRepository.findFirstByUpperLimitGreaterThanEqualOrderByUpperLimitAsc(sendAmountInUSD))
-//                    .thenReturn(Optional.of(flatFeePolicy));
             when(flatServiceFeeRepository.findFirstByUpperLimitGreaterThanEqualOrderByUpperLimitAsc(any(BigDecimal.class)))
                     .thenAnswer(invocation -> {
                         BigDecimal amountInUSD = invocation.getArgument(0, BigDecimal.class);
@@ -284,41 +269,41 @@ class RemittanceFeeServiceTest {
     class ExceptionCases {
 
         @Test
-        @DisplayName("FlatServiceFee 정책을 찾을 수 없을 때 CustomException 발생")
+        @DisplayName("FlatServiceFee 정책을 찾을 수 없을 때 EntityNotFoundException 발생")
         void calculateAndSaveFee_ThrowsException_When_FlatFeePolicyNotFound() {
             // given
-            RemittanceFeeReq req = new RemittanceFeeReq(BigDecimal.ONE, BigDecimal.TEN, "USD", BigDecimal.valueOf(1300));
+            RemittanceFeeReq req = new RemittanceFeeReq(BigDecimal.ONE, BigDecimal.TEN, CurrencyCode.USD, BigDecimal.valueOf(1300));
             when(flatServiceFeeRepository.findFirstByUpperLimitGreaterThanEqualOrderByUpperLimitAsc(any(BigDecimal.class)))
                     .thenReturn(Optional.empty());
 
             // when & then
-            CustomException exception = assertThrows(CustomException.class, () -> {
+            EntityNotFoundException exception = assertThrows(EntityNotFoundException.class, () -> {
                 remittanceFeeService.calculateAndSaveFee(req);
             });
-            assertThat(exception.getMessage()).contains("Flat service fee tier not found for amount");
+            assertThat(exception.getMessage()).contains(FEE_NOT_FOUND);
         }
 
         @Test
-        @DisplayName("PctServiceFee 정책을 찾을 수 없을 때 CustomException 발생")
+        @DisplayName("PctServiceFee 정책을 찾을 수 없을 때 EntityNotFoundException 발생")
         void calculateAndSaveFee_ThrowsException_When_PctFeePolicyNotFound() {
             // given
-            RemittanceFeeReq req = new RemittanceFeeReq(BigDecimal.ONE, BigDecimal.TEN, "USD", BigDecimal.valueOf(1300));
+            RemittanceFeeReq req = new RemittanceFeeReq(BigDecimal.ONE, BigDecimal.TEN, CurrencyCode.USD, BigDecimal.valueOf(1300));
             when(flatServiceFeeRepository.findFirstByUpperLimitGreaterThanEqualOrderByUpperLimitAsc(any(BigDecimal.class)))
                     .thenReturn(Optional.of(flatFeePolicy));
             when(pctServiceFeeRepository.findFirstByOrderByPctServiceFeeIdAsc()).thenReturn(Optional.empty());
 
             // when & then
-            CustomException exception = assertThrows(CustomException.class, () -> {
+            EntityNotFoundException exception = assertThrows(EntityNotFoundException.class, () -> {
                 remittanceFeeService.calculateAndSaveFee(req);
             });
-            assertEquals("Percentage service fee policy not found.", exception.getMessage());
+            assertEquals(FEE_NOT_FOUND, exception.getMessage());
         }
 
         @Test
-        @DisplayName("NetworkFee 정책을 찾을 수 없을 때 CustomException 발생")
+        @DisplayName("NetworkFee 정책을 찾을 수 없을 때 EntityNotFoundException 발생")
         void calculateAndSaveFee_ThrowsException_When_NetworkFeePolicyNotFound() {
             // given
-            String currency = "XYZ";
+            CurrencyCode currency = CurrencyCode.KRW;
             RemittanceFeeReq req = new RemittanceFeeReq(BigDecimal.ONE, BigDecimal.TEN, currency, BigDecimal.valueOf(1300));
             when(flatServiceFeeRepository.findFirstByUpperLimitGreaterThanEqualOrderByUpperLimitAsc(any(BigDecimal.class)))
                     .thenReturn(Optional.of(flatFeePolicy));
@@ -326,10 +311,10 @@ class RemittanceFeeServiceTest {
             when(networkFeeRepository.findByCurrencyCode(currency)).thenReturn(Optional.empty());
 
             // when & then
-            CustomException exception = assertThrows(CustomException.class, () -> {
+            EntityNotFoundException exception = assertThrows(EntityNotFoundException.class, () -> {
                 remittanceFeeService.calculateAndSaveFee(req);
             });
-            assertEquals("Network fee not found for currency: " + currency, exception.getMessage());
+            assertEquals(FEE_NOT_FOUND, exception.getMessage());
         }
     }
 }
