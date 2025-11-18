@@ -29,6 +29,7 @@ public class ExchangeService {
     private static final BigDecimal PREFERENTIAL_RATE = new BigDecimal("0.5");
     public static final CurrencyCode KRW_CURRENCY_CODE = CurrencyCode.KRW;
     private static final int ADJUSTED_RATE_SCALE = 4;
+    private static final int USD_CALCULATION_SCALE = 10; // 새로운 상수 추가
 
     /**
      * 최신 환율 정보를 조회하여 반환
@@ -50,11 +51,11 @@ public class ExchangeService {
             throw new CustomBaseException(ErrorBaseCode.SAME_CURRENCY_EXCHANGE_NOT_ALLOWED);
         }
 
-        Map<String, ExchangeRateRes> rateMap = exchangeRateProvider.getExchangeRates();
         boolean isKrwToForeign = KRW_CURRENCY_CODE.equals(request.fromCurrency());
 
         if (isKrwToForeign || KRW_CURRENCY_CODE.equals(request.toCurrency())) {
-            return performExchange(request, rateMap, isKrwToForeign);
+            Map<String, ExchangeRateRes> rateMap = exchangeRateProvider.getExchangeRates(); // API 호출을 필요한 시점으로 이동
+            return doExchange(request, rateMap, isKrwToForeign);
         } else {
             // 원화가 포함되지 않은 환전은 지원하지 않음
             throw new CustomBaseException(ErrorBaseCode.CURRENCY_NOT_SUPPORTED);
@@ -63,19 +64,20 @@ public class ExchangeService {
 
     /**
      * 실제 환전 계산 로직을 수행하는 내부 메서드
+     * '받을 금액(toAmount)'을 기준으로 계산을 수행
      * @param request 환전 요청 정보
      * @param rateMap 조회된 전체 환율 맵
      * @param isKrwToForeign 원화에서 외화로의 환전 여부 (true: 원화->외화, false: 외화->원화)
      * @return 환전 처리 결과
      */
-    private ExchangeRes performExchange(ExchangeReq request, Map<String, ExchangeRateRes> rateMap, boolean isKrwToForeign) {
-        // 1. 외화 통화
+    private ExchangeRes doExchange(ExchangeReq request, Map<String, ExchangeRateRes> rateMap, boolean isKrwToForeign) {
+        // 외화 통화 결정
         CurrencyCode foreignCurrency = isKrwToForeign ? request.toCurrency() : request.fromCurrency();
 
-        // 2. USD 환율 정보 미리 조회
+        // USD 환율 정보 미리 조회 (중복 호출 방지)
         BigDecimal exchangeRateUSD = getBaseRateForCurrency(rateMap, CurrencyCode.USD);
 
-        // 3. 환율 정보 조회 및 계산
+        // 환율 정보 조회 및 계산
         BigDecimal baseRateFromApi;
         if (foreignCurrency == CurrencyCode.USD) {
             baseRateFromApi = exchangeRateUSD; // USD인 경우 미리 조회한 값 재사용
@@ -86,28 +88,40 @@ public class ExchangeService {
         BigDecimal adjustedBaseRate = baseRateFromApi.divide(new BigDecimal(foreignCurrency.getUnit()), ADJUSTED_RATE_SCALE, RoundingMode.HALF_UP);
         BigDecimal appliedRate = calculateAppliedRate(adjustedBaseRate, isKrwToForeign);
 
-        // 4. 송금액 및 수취액 계산
+        // 받을 금액 기준으로 보낼 금액 계산
         BigDecimal fromAmount;
-        BigDecimal toAmount;
+        BigDecimal toAmount = request.targetAmount();
+
         if (isKrwToForeign) { // 원화 -> 외화
-            toAmount = request.targetAmount(); // 외화 수취액
-            fromAmount = toAmount.multiply(appliedRate).setScale(0, RoundingMode.CEILING); // 원화 송금액
+            // 받을 외화를 위해 내야 할 원화 계산
+            fromAmount = toAmount.multiply(appliedRate).setScale(0, RoundingMode.CEILING);
         } else { // 외화 -> 원화
-            fromAmount = request.targetAmount(); // 외화 송금액
-            toAmount = fromAmount.multiply(appliedRate).setScale(0, RoundingMode.FLOOR); // 원화 수취액
+            // 받을 원화를 위해 내야 할 외화 계산
+            fromAmount = toAmount.divide(appliedRate, 2, RoundingMode.CEILING);
         }
 
-        // 5. 환전 내역 저장
+        // 환전 내역 저장
         Exchange savedExchange = saveExchangeHistory(request, fromAmount, toAmount, baseRateFromApi);
 
-        // 6. 최종 결과 반환
+        // fromAmount의 USD 가치 계산
+        BigDecimal fromAmountInUSD;
+        BigDecimal fromCurrencyBaseRate;
+        if (request.fromCurrency() == CurrencyCode.KRW) {
+            fromCurrencyBaseRate = BigDecimal.ONE;
+        } else {
+            fromCurrencyBaseRate = getBaseRateForCurrency(rateMap, request.fromCurrency());
+        }
+        fromAmountInUSD = getSendAmountInUSD(fromAmount, fromCurrencyBaseRate, request.fromCurrency(), exchangeRateUSD);
+
+
+        // 최종 결과 반환
         return new ExchangeRes(
             savedExchange.getId(),
             request.fromCurrency(),
             request.toCurrency(),
-            appliedRate.setScale(2, RoundingMode.HALF_UP),
+            baseRateFromApi,
             fromAmount,
-            exchangeRateUSD
+            fromAmountInUSD
         );
     }
 
@@ -166,5 +180,36 @@ public class ExchangeService {
     private BigDecimal getBaseRateForCurrency(Map<String, ExchangeRateRes> rateMap, CurrencyCode currency) {
         ExchangeRateRes rateInfo = findRate(rateMap, currency);
         return new BigDecimal(rateInfo.getBaseRate().replace(",", ""));
+    }
+
+    /**
+     * 특정 금액을 USD 가치로 변환
+     * @param sendAmount 변환할 금액
+     * @param exchangeRate 해당 통화의 기준 환율 (원화 대비)
+     * @param currency 변환할 통화 코드
+     * @param exchangeRateUSD USD의 기준 환율 (원화 대비)
+     * @return USD로 변환된 금액 (소수점 둘째 자리까지 반올림)
+     */
+    private BigDecimal getSendAmountInUSD(BigDecimal sendAmount, BigDecimal exchangeRate, CurrencyCode currency, BigDecimal exchangeRateUSD) {
+        if (exchangeRateUSD == null || exchangeRateUSD.compareTo(BigDecimal.ZERO) == 0) {
+            throw new CustomBaseException(ErrorBaseCode.EXCHANGE_RATE_EXPIRED);
+        }
+
+        RoundingMode rounding = RoundingMode.HALF_UP;
+
+        // JPY, IDR 같은 단위가 있는 통화 처리
+        BigDecimal baseRate;
+        if (currency.getUnit() > 1) {
+            baseRate = exchangeRate.divide(BigDecimal.valueOf(currency.getUnit()), USD_CALCULATION_SCALE, rounding);
+        } else {
+            baseRate = exchangeRate;
+        }
+
+        // (통화 기준 환율 / USD 기준 환율) = 통화 1단위당 USD 가치
+        BigDecimal calculatedRate = baseRate.divide(exchangeRateUSD, USD_CALCULATION_SCALE, rounding);
+
+        BigDecimal sendAmountInUSD = sendAmount.multiply(calculatedRate);
+
+        return sendAmountInUSD.setScale(2, RoundingMode.HALF_UP);
     }
 }

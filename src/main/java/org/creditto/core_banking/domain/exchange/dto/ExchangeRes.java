@@ -12,6 +12,6 @@ public record ExchangeRes (
         CurrencyCode toCurrency,
         BigDecimal exchangeRate,
         BigDecimal exchangeAmount,
-        BigDecimal exchangeRateUSD // USD 환율 : 수수료 로직에서 필요
+        BigDecimal fromAmountInUSD
 ) {
 }

@@ -85,6 +85,12 @@ public class ExchangeServiceTest {
         BigDecimal appliedRate = baseRate.multiply(BigDecimal.ONE.add(effectiveSpread)); // 살 때 환율
         BigDecimal expectedKrwDebit = targetUsdAmount.multiply(appliedRate).setScale(0, RoundingMode.CEILING); // 100 * (1300 * 1.005) = 130,650
 
+        // fromAmountInUSD 계산 (KRW -> USD)
+        // fromAmount는 expectedKrwDebit (원화)
+        // KRW의 기준 환율은 1
+        // USD의 기준 환율은 usdRate.getBaseRate()
+        BigDecimal expectedFromAmountInUSD = expectedKrwDebit.divide(new BigDecimal(usdRate.getBaseRate()), 2, RoundingMode.HALF_UP);
+
         given(exchangeRateProvider.getExchangeRates()).willReturn(rateMap);
         given(exchangeRepository.save(any(Exchange.class))).willReturn(mockExchange);
 
@@ -97,24 +103,35 @@ public class ExchangeServiceTest {
         assertThat(response.fromCurrency()).isEqualTo(CurrencyCode.KRW);
         assertThat(response.toCurrency()).isEqualTo(CurrencyCode.USD);
         assertThat(response.exchangeAmount()).isEqualByComparingTo(expectedKrwDebit);
-        assertThat(response.exchangeRateUSD()).isEqualByComparingTo(new BigDecimal(usdRate.getBaseRate()));
+        assertThat(response.fromAmountInUSD()).isEqualByComparingTo(expectedFromAmountInUSD);
 
         // 2. 환전 내역 저장 여부 검증
         verify(exchangeRepository).save(any());
     }
 
     @Test
-    @DisplayName("환전 성공: 외화 -> 원화 (100 USD 요청)")
+    @DisplayName("환전 성공: 외화 -> 원화 (100,000 KRW 수취 요청)")
     void exchange_ForeignToKRW_Success() {
         // Given
-        BigDecimal usdAmount = new BigDecimal("100.00");
-        ExchangeReq request = new ExchangeReq(CurrencyCode.USD, CurrencyCode.KRW, usdAmount);
+        BigDecimal targetKrwAmount = new BigDecimal("100000"); // 100,000 KRW를 받고 싶음
+        ExchangeReq request = new ExchangeReq(CurrencyCode.USD, CurrencyCode.KRW, targetKrwAmount);
         Exchange mockExchange = Exchange.builder().id(1L).build();
 
         // 서비스의 실제 계산 로직을 테스트 코드에 반영
         BigDecimal baseRate = new BigDecimal(usdRate.getBaseRate());
         BigDecimal effectiveSpread = SPREAD_RATE.multiply(BigDecimal.ONE.subtract(PREFERENTIAL_RATE));
-        BigDecimal appliedRate = baseRate.multiply(BigDecimal.ONE.subtract(effectiveSpread)); // 팔 때 환율
+        BigDecimal appliedRate = baseRate.multiply(BigDecimal.ONE.subtract(effectiveSpread)); // 팔 때 환율: 1300 * 0.995 = 1293.5
+
+        // 100,000 KRW를 받기 위해 필요한 USD(fromAmount)를 역산
+        // fromAmount = 100000 / 1293.5 = 77.309... -> 77.31 (올림)
+        BigDecimal expectedFromAmount = targetKrwAmount.divide(appliedRate, 2, RoundingMode.CEILING);
+
+        // fromAmountInUSD 계산 (USD -> KRW)
+        // fromAmount는 expectedFromAmount (USD)
+        // USD의 기준 환율은 usdRate.getBaseRate()
+        // USD의 USD 기준 환율은 usdRate.getBaseRate()
+        // 따라서 fromAmountInUSD는 expectedFromAmount와 동일
+        BigDecimal expectedFromAmountInUSD = expectedFromAmount;
 
         given(exchangeRateProvider.getExchangeRates()).willReturn(rateMap);
         given(exchangeRepository.save(any(Exchange.class))).willReturn(mockExchange);
@@ -126,8 +143,8 @@ public class ExchangeServiceTest {
         // 1. 응답 검증
         assertThat(response.fromCurrency()).isEqualTo(CurrencyCode.USD);
         assertThat(response.toCurrency()).isEqualTo(CurrencyCode.KRW);
-        assertThat(response.exchangeAmount()).isEqualByComparingTo(usdAmount);
-        assertThat(response.exchangeRateUSD()).isEqualByComparingTo(new BigDecimal(usdRate.getBaseRate()));
+        assertThat(response.exchangeAmount()).isEqualByComparingTo(expectedFromAmount); // 내야 할 외화 금액 검증
+        assertThat(response.fromAmountInUSD()).isEqualByComparingTo(expectedFromAmountInUSD);
 
         // 2. 환전 내역 저장 여부 검증
         verify(exchangeRepository).save(any());
@@ -149,6 +166,12 @@ public class ExchangeServiceTest {
         BigDecimal appliedRate = baseRatePerUnit.multiply(BigDecimal.ONE.add(effectiveSpread)); // 살 때 환율: 9.00 * (1 + 0.005) = 9.045
         BigDecimal expectedKrwDebit = targetJpyAmount.multiply(appliedRate).setScale(0, RoundingMode.CEILING); // 100 * 9.045 = 905
 
+        // fromAmountInUSD 계산 (KRW -> JPY)
+        // fromAmount는 expectedKrwDebit (원화)
+        // KRW의 기준 환율은 1
+        // USD의 기준 환율은 usdRate.getBaseRate()
+        BigDecimal expectedFromAmountInUSD = expectedKrwDebit.divide(new BigDecimal(usdRate.getBaseRate()), 2, RoundingMode.HALF_UP);
+
         given(exchangeRateProvider.getExchangeRates()).willReturn(rateMap);
         given(exchangeRepository.save(any(Exchange.class))).willReturn(mockExchange);
 
@@ -159,7 +182,7 @@ public class ExchangeServiceTest {
         assertThat(response.fromCurrency()).isEqualTo(CurrencyCode.KRW);
         assertThat(response.toCurrency()).isEqualTo(CurrencyCode.JPY);
         assertThat(response.exchangeAmount()).isEqualByComparingTo(expectedKrwDebit);
-        assertThat(response.exchangeRateUSD()).isEqualByComparingTo(new BigDecimal(usdRate.getBaseRate()));
+        assertThat(response.fromAmountInUSD()).isEqualByComparingTo(expectedFromAmountInUSD);
 
         verify(exchangeRepository).save(any());
     }
