@@ -48,6 +48,7 @@ public enum ErrorBaseCode implements ErrorCode {
     NOT_FOUND_API(HttpStatus.NOT_FOUND, 404, "잘못된 API 요청입니다."),
     NOT_FOUND_ENTITY(HttpStatus.NOT_FOUND, 404, "대상을 찾을 수 없습니다."),
     NOT_FOUND_ACCOUNT(HttpStatus.NOT_FOUND, 40401, "해당 계좌를 찾을 수 없습니다."),
+    NOT_FOUND_TRANSACTION_TYPE(HttpStatus.NOT_FOUND, 40402, "해당 거래 타입을 찾을 수 없습니다."),
     REGULAR_REMITTANCE_NOT_FOUND(HttpStatus.NOT_FOUND, 40411, "해당 자동이체 내역을 찾을 수 없습니다."),
 
     /**
@@ -67,7 +68,7 @@ public enum ErrorBaseCode implements ErrorCode {
      */
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, 500, "서버 내부 오류입니다."),
     URL_DECODE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, 500, "URL 디코딩 에러"),
-    TRANSACTION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, 50001, "거래 처지 중 오류가 발생했습니다."),
+    TRANSACTION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, 50001, "거래 중 오류가 발생했습니다."),
 
     /**
      * 501 NOT IMPLEMENTED - 구현되지 않음

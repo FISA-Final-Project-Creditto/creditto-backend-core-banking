@@ -6,6 +6,9 @@ import org.creditto.core_banking.domain.account.entity.AccountState;
 import org.creditto.core_banking.domain.account.entity.AccountType;
 import org.creditto.core_banking.domain.account.repository.AccountRepository;
 import org.creditto.core_banking.domain.account.service.AccountService;
+import org.creditto.core_banking.domain.account.service.TransactionStrategy;
+import org.creditto.core_banking.domain.account.service.TransactionStrategyFactory;
+import org.creditto.core_banking.domain.transaction.entity.TxnType;
 import org.creditto.core_banking.global.response.error.ErrorBaseCode;
 import org.creditto.core_banking.global.response.exception.CustomBaseException;
 import org.junit.jupiter.api.DisplayName;
@@ -22,6 +25,7 @@ import java.util.Optional;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class AccountServiceTest {
@@ -29,8 +33,49 @@ class AccountServiceTest {
     @Mock
     private AccountRepository accountRepository;
 
+    @Mock
+    private TransactionStrategyFactory strategyFactory; // 의존성 추가
+
+    @Mock
+    private TransactionStrategy mockStrategy; // 테스트에 사용할 가짜 전략
+
     @InjectMocks
     private AccountService accountService;
+
+    @Test
+    @DisplayName("거래 처리 로직(processTransaction) 성공")
+    void processTransaction_Success() {
+        // given
+        Long accountId = 1L;
+        BigDecimal amount = new BigDecimal("10000");
+        TxnType txnType = TxnType.WITHDRAWAL;
+        Long relatedId = null;
+
+        Account mockAccount = Account.of(
+                "ACC001",
+                "테스트 계좌",
+                BigDecimal.valueOf(50000),
+                AccountType.DEPOSIT,
+                AccountState.ACTIVE,
+                "CLIENT001"
+        );
+
+        // 1. accountRepository.findById가 호출되면 mockAccount를 반환
+        given(accountRepository.findById(accountId)).willReturn(Optional.of(mockAccount));
+        // 2. strategyFactory.getStrategy가 호출되면 가짜 전략(mockStrategy)을 반환
+        given(strategyFactory.getStrategy(txnType)).willReturn(mockStrategy);
+
+        // when
+        accountService.processTransaction(accountId, amount, txnType, relatedId);
+
+        // then
+        // 1. accountRepository.findById가 정확한 인자로 1번 호출되었는지 검증
+        verify(accountRepository).findById(accountId);
+        // 2. strategyFactory.getStrategy가 정확한 인자로 1번 호출되었는지 검증
+        verify(strategyFactory).getStrategy(txnType);
+        // 3. mockStrategy.execute가 정확한 인자들로 1번 호출되었는지 검증
+        verify(mockStrategy).execute(mockAccount, amount, relatedId);
+    }
 
     @Test
     @DisplayName("잔액 조회 성공")
@@ -52,10 +97,10 @@ class AccountServiceTest {
                 .willReturn(Optional.of(mockAccount));
 
         // when
-        BigDecimal result = accountService.getAccountById(accountId).balance();
+        AccountRes result = accountService.getAccountById(accountId);
 
         // then
-        assertThat(result).isEqualTo(BigDecimal.valueOf(100000));
+        assertThat(result.balance()).isEqualByComparingTo(BigDecimal.valueOf(100000));
     }
 
     @Test

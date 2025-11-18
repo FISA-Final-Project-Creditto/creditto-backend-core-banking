@@ -6,7 +6,6 @@ import org.creditto.core_banking.domain.account.entity.Account;
 import org.creditto.core_banking.global.common.BaseEntity;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 @Entity
 @Getter
@@ -23,24 +22,23 @@ public class Transaction extends BaseEntity {
     @JoinColumn(name = "account_id", nullable = false)
     private Account account;
 
-    @Column(precision = 20, scale = 2) // => 정수18자리, 소수점 부분 2자리
+    @Column(precision = 20, scale = 2)
     private BigDecimal txnAmount;
 
-    @Enumerated(EnumType.STRING)
+    @Enumerated(EnumType.STRING) // 거래 종류
     private TxnType txnType;
 
-    @Column(precision = 20, scale = 2) // => 정수18자리, 소수점 부분 2자리
-    private BigDecimal balanceAfter;
+    private Long typeId; // 거래 종류 ID
 
-    private LocalDateTime txnAt;
+    private TxnResult txnResult; // 거래 결과
 
-    public static Transaction of(Account account, BigDecimal txnAmount, TxnType txnType, BigDecimal balanceAfter, LocalDateTime txnAt) {
+    public static Transaction of(Account account, BigDecimal txnAmount, TxnType txnType, Long typeId, TxnResult txnResult) {
         return Transaction.builder()
                 .account(account)
                 .txnAmount(txnAmount)
                 .txnType(txnType)
-                .balanceAfter(balanceAfter)
-                .txnAt(txnAt)
+                .typeId(typeId)
+                .txnResult(txnResult)
                 .build();
     }
 }

@@ -1,6 +1,7 @@
 package org.creditto.core_banking.domain.account.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.creditto.core_banking.domain.account.dto.AccountRes;
 import org.creditto.core_banking.domain.account.service.AccountService;
 import org.creditto.core_banking.global.response.ApiResponseUtil;
 import org.creditto.core_banking.global.response.BaseResponse;
@@ -11,6 +12,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/core/account")
@@ -20,17 +23,17 @@ public class AccountController {
 
 
     @GetMapping("/{accountId}/balance")
-    public ResponseEntity<BaseResponse<?>> getBalance(@PathVariable Long accountId) {
+    public ResponseEntity<BaseResponse<?>> getAccountByAccountId(@PathVariable Long accountId) {
         return ApiResponseUtil.success(SuccessCode.OK, accountService.getAccountById(accountId));
     }
 
     @GetMapping("/{accountNo}")
-    public ResponseEntity<BaseResponse<?>> getBalance(@PathVariable String accountNo) {
+    public ResponseEntity<BaseResponse<?>> getAccountByAccountNo(@PathVariable String accountNo) {
         return ApiResponseUtil.success(SuccessCode.OK, accountService.getAccountByAccountNo(accountNo));
     }
 
     @GetMapping("client/{clientId}")
-    public ResponseEntity<BaseResponse<?>> findByClientId(@PathVariable String clientId) {
+    public ResponseEntity<BaseResponse<?>> getAccountByClientId(@PathVariable String clientId) {
         return ApiResponseUtil.success(SuccessCode.OK, accountService.getAccountByClientId(clientId));
     }
 }

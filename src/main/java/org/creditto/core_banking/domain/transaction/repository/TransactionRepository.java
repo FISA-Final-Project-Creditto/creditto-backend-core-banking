@@ -2,6 +2,8 @@ package org.creditto.core_banking.domain.transaction.repository;
 
 import org.creditto.core_banking.domain.transaction.entity.Transaction;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -11,4 +13,7 @@ import java.util.List;
 public interface TransactionRepository extends JpaRepository<Transaction, Long> {
 
     List<Transaction> findByAccountId(Long accountId);
+
+    @Query("SELECT t FROM Transaction t JOIN FETCH t.account a WHERE a.id = :accountId")
+    List<Transaction> findByAccountIdWithAccount(@Param("accountId") Long accountId);
 }
