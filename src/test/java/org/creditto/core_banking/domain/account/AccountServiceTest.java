@@ -36,10 +36,10 @@ class AccountServiceTest {
     private AccountRepository accountRepository;
 
     @Mock
-    private TransactionStrategyFactory strategyFactory; // 의존성 추가
+    private TransactionStrategyFactory strategyFactory;
 
     @Mock
-    private TransactionStrategy mockStrategy; // 테스트에 사용할 가짜 전략
+    private TransactionStrategy mockStrategy;
 
     @InjectMocks
     private AccountService accountService;

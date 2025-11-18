@@ -7,7 +7,8 @@ import org.creditto.core_banking.global.response.error.ErrorBaseCode;
 import org.creditto.core_banking.global.response.exception.CustomBaseException;
 
 import java.math.BigDecimal;
-import java.security.SecureRandom; // Changed from java.util.Random
+import java.security.SecureRandom;
+import java.util.EnumMap;
 import java.util.Map;
 
 @Entity
@@ -38,7 +39,7 @@ public class Account extends BaseEntity {
 
     public static Account of(String accountNo, String accountName, BigDecimal balance, AccountType accountType, AccountState accountState, String clientId) {
         return Account.builder()
-                .accountNo(accountNo) // accountNo는 null이 될 수 있으며, @PrePersist에서 생성됩니다.
+                .accountNo(accountNo) // accountNo는 null이 될 수 있으며, @PrePersist에서 생성
                 .accountName(accountName)
                 .balance(balance)
                 .accountType(accountType)
@@ -47,12 +48,13 @@ public class Account extends BaseEntity {
                 .build();
     }
 
-    private static final Map<AccountType, String> ACCOUNT_TYPES_SETTING = Map.of(
+    private static final Map<AccountType, String> ACCOUNT_TYPES_SETTING = new EnumMap<>(Map.of(
             AccountType.DEPOSIT, "1002",
             AccountType.SAVINGS, "181",
             AccountType.LOAN, "207",
             AccountType.INVESTMENT, "520"
-    );
+    ));
+
     private static final int ACCOUNT_NO_LENGTH = 13;
     private static final SecureRandom RANDOM = new SecureRandom();
 
