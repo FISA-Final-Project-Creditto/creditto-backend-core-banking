@@ -1,6 +1,10 @@
 package org.creditto.core_banking.global.response.error;
 
-public abstract class ErrorMessage {
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
+public final class ErrorMessage {
 
     /**
      * NOT FOUND - 조회 실패

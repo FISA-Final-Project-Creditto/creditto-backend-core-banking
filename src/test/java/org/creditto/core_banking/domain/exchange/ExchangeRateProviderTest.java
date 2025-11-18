@@ -14,7 +14,7 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
-public class ExchangeRateProviderTest {
+class ExchangeRateProviderTest {
 
     @Autowired
     private ExchangeRateProvider exchangeRateProvider;
