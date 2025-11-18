@@ -25,6 +25,7 @@ public enum ErrorBaseCode implements ErrorCode {
     INVALID_RECIPIENT_INFORMATION(HttpStatus.BAD_REQUEST, 40030, "잘못된 수취인 정보입니다."),
     EXCHANGE_RATE_EXPIRED(HttpStatus.BAD_REQUEST, 40040, "환율 유효시간이 만료되었습니다."),
     CURRENCY_NOT_SUPPORTED(HttpStatus.BAD_REQUEST, 40041, "지원하지 않는 통화입니다."),
+    SAME_CURRENCY_EXCHANGE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, 40042, "환전 전 통화와 환전 후 통화가 같을 수 없습니다."),
 
     /**
      * 401 UNAUTHORIZED - 리소스 접근 권한
