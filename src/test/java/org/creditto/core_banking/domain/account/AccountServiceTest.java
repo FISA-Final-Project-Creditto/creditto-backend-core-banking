@@ -1,5 +1,6 @@
 package org.creditto.core_banking.domain.account;
 
+import org.creditto.core_banking.domain.account.dto.AccountCreateReq;
 import org.creditto.core_banking.domain.account.dto.AccountRes;
 import org.creditto.core_banking.domain.account.entity.Account;
 import org.creditto.core_banking.domain.account.entity.AccountState;
@@ -24,6 +25,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -34,13 +36,51 @@ class AccountServiceTest {
     private AccountRepository accountRepository;
 
     @Mock
-    private TransactionStrategyFactory strategyFactory; // 의존성 추가
+    private TransactionStrategyFactory strategyFactory;
 
     @Mock
-    private TransactionStrategy mockStrategy; // 테스트에 사용할 가짜 전략
+    private TransactionStrategy mockStrategy;
 
     @InjectMocks
     private AccountService accountService;
+
+    @Test
+    @DisplayName("계좌 생성 성공")
+    void createAccount_Success() {
+        // Given
+        AccountCreateReq request = new AccountCreateReq(
+                "새로운 계좌",
+                AccountType.DEPOSIT
+        );
+
+        String externalUserId = "externalUserId";
+
+        // accountNo는 @PrePersist를 통해 엔티티 내부에서 생성되므로,
+        // 테스트에서는 accountRepository.save()가 반환할 Account 객체를 미리 정의하여 모킹합니다.
+        String expectedAccountNo = "MOCKED_ACCOUNT_NO"; // 테스트를 위한 가상의 계좌 번호
+        Account mockSavedAccount = Account.of(
+                expectedAccountNo, // @PrePersist에 의해 생성될 것으로 예상되는 계좌 번호
+                request.accountName(),
+                BigDecimal.ZERO,
+                request.accountType(),
+                AccountState.ACTIVE,
+                externalUserId
+        );
+        // ID는 save 시점에 부여된다고 가정
+        given(accountRepository.save(any(Account.class))).willReturn(mockSavedAccount);
+
+        // When
+        AccountRes result = accountService.createAccount(request, externalUserId);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.accountNo()).isEqualTo(expectedAccountNo);
+        assertThat(result.accountName()).isEqualTo(request.accountName());
+        assertThat(result.accountType()).isEqualTo(request.accountType());
+        assertThat(result.accountState()).isEqualTo(AccountState.ACTIVE);
+        assertThat(result.clientId()).isEqualTo(externalUserId);
+
+    }
 
     @Test
     @DisplayName("거래 처리 로직(processTransaction) 성공")
