@@ -22,7 +22,7 @@ public class TransactionService {
 
     @Transactional(readOnly = true)
     public List<TransactionRes> findByAccountId(Long accountId) {
-        List<Transaction> transactions = transactionRepository.findByAccountId(accountId);
+        List<Transaction> transactions = transactionRepository.findByAccountIdWithAccount(accountId);
 
         return transactions.stream()
                   .map(TransactionRes::from)

@@ -29,6 +29,9 @@ public abstract class AbstractTransactionStrategy implements TransactionStrategy
             // 실패 트랜잭션 저장 후
             saveFailedTransaction(account, amount, typeId);
             throw new CustomBaseException(ErrorBaseCode.TRANSACTION_FAILED);
+        } catch (Exception e) {
+            saveFailedTransaction(account, amount, typeId);
+            throw new IllegalArgumentException(ErrorBaseCode.TRANSACTION_FAILED.getMessage());
         }
     }
 

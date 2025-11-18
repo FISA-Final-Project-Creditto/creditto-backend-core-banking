@@ -11,4 +11,7 @@ import java.util.List;
 public interface TransactionRepository extends JpaRepository<Transaction, Long> {
 
     List<Transaction> findByAccountId(Long accountId);
+
+    @Query("SELECT t FROM Transaction t JOIN FETCH t.account a WHERE a.id = :accountId")
+    List<Transaction> findByAccountIdWithAccount(@Param("accountId") Long accountId);
 }
