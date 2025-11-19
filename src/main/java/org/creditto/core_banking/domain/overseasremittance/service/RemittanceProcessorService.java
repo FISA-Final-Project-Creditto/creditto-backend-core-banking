@@ -22,6 +22,7 @@ import org.creditto.core_banking.domain.remittancefee.service.RemittanceFeeServi
 import org.creditto.core_banking.domain.transaction.entity.TxnResult;
 import org.creditto.core_banking.domain.transaction.entity.TxnType;
 import org.creditto.core_banking.domain.transaction.service.TransactionService;
+import org.creditto.core_banking.global.common.CurrencyCode;
 import org.creditto.core_banking.global.response.error.ErrorBaseCode;
 import org.creditto.core_banking.global.response.exception.CustomBaseException;
 import org.springframework.stereotype.Service;
@@ -30,13 +31,14 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.Optional;
 
+import static org.creditto.core_banking.global.response.error.ErrorBaseCode.*;
+
 /**
  * 해외송금의 핵심 비즈니스 로직을 실제로 실행하는 Domain Service 입니다.
  * 이 서비스는 외부와 격리되어, 오직 내부 Command 객체({@link ExecuteRemittanceCommand})만을 받아
  * 송금 실행에 필요한 모든 도메인 규칙(엔티티 조회, 잔액 확인, 출금, 거래 내역 생성 등)을 트랜잭션 내에서 수행합니다.
  */
 @Service
-@Transactional
 @RequiredArgsConstructor
 public class RemittanceProcessorService {
 
@@ -62,44 +64,39 @@ public class RemittanceProcessorService {
      * @throws CustomBaseException 잔액이 부족하거나 지원하지 않는 통화인 경우 발생
      * @throws IllegalArgumentException 관련 엔티티를 찾을 수 없는 경우 발생
      */
-    public OverseasRemittanceResponseDto execute(ExecuteRemittanceCommand command) {
+    @Transactional
+    public OverseasRemittanceResponseDto execute(final ExecuteRemittanceCommand command) {
 
         // 관련 엔티티 조회
-        Account account = accountRepository.findById(command.getAccountId())
-                .orElseThrow(() -> new IllegalArgumentException("계좌를 찾을 수 없습니다."));
+        Account account = accountRepository.findById(command.accountId())
+                .orElseThrow(() -> new CustomBaseException(NOT_FOUND_ACCOUNT));
 
-        Recipient recipient = recipientRepository.findById(command.getRecipientId())
-                .orElseThrow(() -> new IllegalArgumentException("수취인을 찾을 수 없습니다."));
+        Recipient recipient = recipientRepository.findById(command.recipientId())
+                .orElseThrow(() -> new CustomBaseException(NOT_FOUND_RECIPIENT));
 
         // 정기 송금 정보 조회 (regRemId가 있을 경우)
-        RegularRemittance regularRemittance = Optional.ofNullable(command.getRegRemId())
+        RegularRemittance regularRemittance = Optional.ofNullable(command.regRemId())
                 .map(id -> regularRemittanceRepository.findById(id)
-                        .orElseThrow(() -> new IllegalArgumentException("정기송금 정보를 찾을 수 없습니다.")))
+                        .orElseThrow(() -> new CustomBaseException(NOT_FOUND_REGULAR_REMITTANCE)))
                 .orElse(null);
 
         // 1. ExchangeService를 통해 환전 처리 및 결과(DTO) 수신
-        ExchangeReq exchangeReq = new ExchangeReq(command.getSendCurrency(), command.getReceiveCurrency(), command.getTargetAmount());
-        ExchangeRes exchangeRes = exchangeService.exchange(exchangeReq);
+        ExchangeRes exchangeRes = exchange(command);
 
         // 실제 송금해야 할 금액
         BigDecimal actualSendAmount = exchangeRes.exchangeAmount();
 
-        // 2. 수수료 계산을 위해 RemittanceFeeService 호출
-        RemittanceFeeReq feeReq = new RemittanceFeeReq(
-            exchangeRes.exchangeRate(),
-                actualSendAmount,  // 실제 보낼 금액으로 수수료 계산
-            command.getReceiveCurrency(),
-            exchangeRes.fromAmountInUSD() // 환전 결과에서 USD 환율 가져오기
-        );
+        // 수수료 계산
+        FeeRecord feeRecord = calculateFee(exchangeRes, command.receiveCurrency());
 
-        FeeRecord feeRecord = remittanceFeeService.calculateAndSaveFee(feeReq);
+        // 총 수수료
         BigDecimal totalFee = feeRecord.getTotalFee();
 
         // 총 차감될 금액 계산 (실제 보낼 금액 + 총 수수료)
         BigDecimal totalDeduction = actualSendAmount.add(totalFee);
 
         // 잔액 확인
-        if (account.getBalance().compareTo(totalDeduction) < 0) {
+        if (!account.checkSufficientBalance(totalDeduction)) {
             // 실패 트랜잭션 기록
             transactionService.saveTransaction(account, actualSendAmount, TxnType.WITHDRAWAL, null, TxnResult.FAILURE);
             throw new CustomBaseException(ErrorBaseCode.INSUFFICIENT_FUNDS);
@@ -107,9 +104,9 @@ public class RemittanceProcessorService {
 
         // 3. DTO에 담겨올 ID로 Exchange 엔티티 다시 조회
          Long exchangeId = exchangeRes.exchangeId();
-         Exchange savedExchange = exchangeRepository.findById(exchangeId)
-                 .orElseThrow(() -> new IllegalArgumentException("환전 내역을 찾을 수 없습니다."));
 
+         Exchange savedExchange = exchangeRepository.findById(exchangeId)
+                 .orElseThrow(() -> new CustomBaseException(NOT_FOUND_EXCHANGE_RECORD));
 
         // 5. 송금 이력 생성
         OverseasRemittance overseasRemittance = OverseasRemittance.of(
@@ -118,12 +115,8 @@ public class RemittanceProcessorService {
                 regularRemittance,
                 savedExchange,
                 feeRecord,
-                command.getClientId(),
-                command.getSendCurrency(),
-                command.getReceiveCurrency(),
                 actualSendAmount,
-                command.getTargetAmount(),
-                command.getStartDate()
+                command
         );
         remittanceRepository.save(overseasRemittance);
 
@@ -140,5 +133,20 @@ public class RemittanceProcessorService {
         accountRepository.save(account);
 
         return OverseasRemittanceResponseDto.from(overseasRemittance);
+    }
+
+    private ExchangeRes exchange(ExecuteRemittanceCommand command) {
+        ExchangeReq exchangeReq = ExchangeReq.of(command.sendCurrency(), command.receiveCurrency(), command.targetAmount());
+        return exchangeService.exchange(exchangeReq);
+    }
+
+    private FeeRecord calculateFee(ExchangeRes exchangeRes, CurrencyCode currencyCode) {
+        RemittanceFeeReq feeReq = RemittanceFeeReq.of(
+                exchangeRes.exchangeRate(),
+                exchangeRes.exchangeAmount(),  // 실제 보낼 금액으로 수수료 계산
+                currencyCode,
+                exchangeRes.fromAmountInUSD() // 환전 결과에서 USD 환율 가져오기
+        );
+        return remittanceFeeService.calculateAndSaveFee(feeReq);
     }
 }

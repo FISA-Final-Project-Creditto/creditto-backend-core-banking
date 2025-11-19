@@ -58,24 +58,25 @@ class OneTimeRemittanceServiceTest {
     void setUp() {
         clientId = "testClient";
         mockAccount = Account.of("1002-123-456789", "예금계좌", BigDecimal.valueOf(600_000), DEPOSIT , ACTIVE, clientId);
-        mockRecipient = Recipient.of("John Doe", "310-555-1234", null, "Test Bank", "CHASUS33XXX", "1234567890", "USA", CurrencyCode.USD);
 
         mockRecipientInfo = OverseasRemittanceRequestDto.RecipientInfo.builder()
                 .name("John Doe")
+                .accountNumber("1234567890")
                 .phoneNo("310-555-1234")
+                .phoneCc("+1")
                 .bankName("Test Bank")
                 .bankCode("CHASUS33XXX")
-                .accountNumber("1234567890")
                 .country("USA")
                 .build();
 
+        mockRecipient = Recipient.of(mockRecipientInfo, CurrencyCode.USD);
+
         baseRequest = OverseasRemittanceRequestDto.builder()
-            .clientId(clientId)
             .accountNumber(mockAccount.getAccountNo()) // 변경: accountId -> accountNumber
             .recipientInfo(mockRecipientInfo) // 변경: recipientId -> RecipientInfo
             .sendCurrency(CurrencyCode.KRW)
             .receiveCurrency(CurrencyCode.USD)
-            .sendAmount(BigDecimal.valueOf(10_000))
+            .targetAmount(BigDecimal.valueOf(10_000))
             .startDate(LocalDate.now())
             .build();
 
@@ -101,7 +102,7 @@ class OneTimeRemittanceServiceTest {
         given(remittanceProcessorService.execute(any(ExecuteRemittanceCommand.class))).willReturn(mockResponse);
 
         // when
-        OverseasRemittanceResponseDto result = oneTimeRemittanceService.processRemittance(baseRequest);
+        OverseasRemittanceResponseDto result = oneTimeRemittanceService.processRemittance(clientId, baseRequest);
 
         // then
         assertThat(result).isNotNull();
@@ -125,7 +126,7 @@ class OneTimeRemittanceServiceTest {
 
         // when & then
         // OneTimeRemittanceService가 해당 예외를 그대로 던지는지 검증
-        assertThatThrownBy(() -> oneTimeRemittanceService.processRemittance(baseRequest))
+        assertThatThrownBy(() -> oneTimeRemittanceService.processRemittance(clientId, baseRequest))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessage(errorMessage);
 

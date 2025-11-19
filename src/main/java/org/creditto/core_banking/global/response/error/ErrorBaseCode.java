@@ -51,6 +51,10 @@ public enum ErrorBaseCode implements ErrorCode {
     NOT_FOUND_ACCOUNT(HttpStatus.NOT_FOUND, 40401, "해당 계좌를 찾을 수 없습니다."),
     NOT_FOUND_TRANSACTION_TYPE(HttpStatus.NOT_FOUND, 40402, "해당 거래 타입을 찾을 수 없습니다."),
     REGULAR_REMITTANCE_NOT_FOUND(HttpStatus.NOT_FOUND, 40411, "해당 자동이체 내역을 찾을 수 없습니다."),
+    NOT_FOUND_RECIPIENT(HttpStatus.NOT_FOUND, 40402, "해당 수취인을 찾을 수 없습니다."),
+    NOT_FOUND_REGULAR_REMITTANCE(HttpStatus.NOT_FOUND, 40402, "정기송금 정보를 찾을 수 없습니다."),
+    NOT_FOUND_EXCHANGE_RECORD(HttpStatus.NOT_FOUND, 40403, "환전 내역을 찾을 수 없습니다."),
+
 
     /**
      * 405 METHOD NOT ALLOWED - 허용되지 않은 메서드
