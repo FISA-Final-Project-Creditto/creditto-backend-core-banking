@@ -2,6 +2,7 @@ package org.creditto.core_banking.domain.account.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.creditto.core_banking.domain.account.dto.AccountCreateReq;
+import org.creditto.core_banking.domain.account.dto.AccountRes;
 import org.creditto.core_banking.domain.account.service.AccountService;
 import org.creditto.core_banking.global.response.ApiResponseUtil;
 import org.creditto.core_banking.global.response.BaseResponse;
@@ -27,9 +28,14 @@ public class AccountController {
         return ApiResponseUtil.success(SuccessCode.CREATED, accountService.createAccount(request, externalUserId));
     }
 
-    @GetMapping("/{accountId}/balance")
+    @GetMapping("/{accountId}/account")
     public ResponseEntity<BaseResponse<?>> getAccountByAccountId(@PathVariable Long accountId) {
         return ApiResponseUtil.success(SuccessCode.OK, accountService.getAccountById(accountId));
+    }
+
+    @GetMapping("/{accountId}/balance")
+    public ResponseEntity<BaseResponse<?>> getAccountBalanceByAccountId(@PathVariable Long accountId) {
+        return ApiResponseUtil.success(SuccessCode.OK, accountService.getAccountBalanceById(accountId));
     }
 
     @GetMapping("/{accountNo}")

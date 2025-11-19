@@ -2,8 +2,11 @@ package org.creditto.core_banking.domain.account.repository;
 
 import org.creditto.core_banking.domain.account.entity.Account;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -15,4 +18,7 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
 
     // 클라이언트 ID로 계좌 조회
     List<Account> findAccountByExternalUserId(String externalUserId);
+
+    @Query("SELECT a.balance FROM Account a WHERE a.id = :id")
+    Optional<BigDecimal> findBalanceById(@Param("id") Long id);
 }
