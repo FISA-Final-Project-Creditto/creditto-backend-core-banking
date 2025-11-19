@@ -83,7 +83,7 @@ public class AccountService {
         return AccountRes.from(account);
     }
 
-    public List<AccountRes> getAccountByExternalUserId(String externalUserId) {
+    public List<AccountRes> getAccountByClientId(String externalUserId) {
         List<Account> accounts = accountRepository.findAccountByExternalUserId(externalUserId);
 
         return accounts.stream()
