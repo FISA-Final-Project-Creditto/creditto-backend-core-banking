@@ -98,7 +98,7 @@ public class Account extends BaseEntity {
 
     // 출금 가능한지 확인
     public boolean checkSufficientBalance(BigDecimal amount) {
-        return this.balance.compareTo(amount) > 0;
+        return this.balance.compareTo(amount) >= 0;
     }
 
 }
