@@ -19,7 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
  * 도메인 로직 실행을 다른 도메인 서비스({@link RemittanceProcessorService})에 위임하는 오케스트레이션 역할을 수행합니다.
  */
 @Service
-@Transactional
 @RequiredArgsConstructor
 public class OneTimeRemittanceService {
 
@@ -33,37 +32,28 @@ public class OneTimeRemittanceService {
      * @param request 클라이언트로부터 받은 해외송금 요청 데이터
      * @return 송금 처리 결과
      */
-    public OverseasRemittanceResponseDto processRemittance(OverseasRemittanceRequestDto request) {
+    @Transactional
+    public OverseasRemittanceResponseDto processRemittance(String userId, OverseasRemittanceRequestDto request) {
         // 출금 계좌 조회 및 ID 확보
         Account account = accountRepository.findByAccountNo(request.getAccountNumber())
                 .orElseThrow(() -> new CustomBaseException(ErrorBaseCode.NOT_FOUND_ACCOUNT));
 
-        //TODO:기존에 등록된 수취인이 있는지 먼저 확인하고, 없는 경우에만 새로 생성하는 로직을 추가
+        // TODO : 기존에 등록된 수취인이 있는지 먼저 확인하고, 없는 경우에만 새로 생성하는 로직을 추가
         // 수취인 정보 처리 (항상 신규 생성)
         OverseasRemittanceRequestDto.RecipientInfo recipientInfo = request.getRecipientInfo();
-        Recipient newRecipient = Recipient.of(
-                recipientInfo.getName(),
-                recipientInfo.getPhoneNo(),
-                recipientInfo.getPhoneCc(),
-                recipientInfo.getBankName(),
-                recipientInfo.getBankCode(),
-                recipientInfo.getAccountNumber(),
-                recipientInfo.getCountry(),
-                request.getReceiveCurrency()
-        );
-        Recipient savedRecipient = recipientRepository.save(newRecipient);
+        Recipient savedRecipient = recipientRepository.save(Recipient.of(recipientInfo, request.getReceiveCurrency()));
 
         // ExecuteRemittanceCommand 생성
-        ExecuteRemittanceCommand command = ExecuteRemittanceCommand.builder()
-                .clientId(request.getClientId())
-                .recipientId(savedRecipient.getRecipientId())
-                .accountId(account.getId())
-                .regRemId(request.getRecurId())
-                .sendCurrency(request.getSendCurrency())
-                .receiveCurrency(request.getReceiveCurrency())
-                .targetAmount(request.getTargetAmount())
-                .startDate(request.getStartDate())
-                .build();
+        ExecuteRemittanceCommand command = ExecuteRemittanceCommand.of(
+                userId,
+                savedRecipient.getRecipientId(),
+                account.getId(),
+                request.getRecurId(),
+                request.getSendCurrency(),
+                request.getReceiveCurrency(),
+                request.getTargetAmount(),
+                request.getStartDate()
+        );
 
         // Command 실행 위임: 생성된 Command를 통해 실제 송금 로직 실행
         return remittanceProcessorService.execute(command);

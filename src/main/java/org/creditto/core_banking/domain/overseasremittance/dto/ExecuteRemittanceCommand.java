@@ -1,9 +1,6 @@
 package org.creditto.core_banking.domain.overseasremittance.dto;
-
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
 import org.creditto.core_banking.global.common.CurrencyCode;
+import org.springframework.lang.Nullable;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -13,49 +10,51 @@ import java.time.LocalDate;
  * CQRS 패턴의 Command에 해당하며, 송금 처리에 필요한 모든 정보를 포함합니다.
  * 이 객체는 순수한 데이터 컨테이너이며, 생성 로직은 Application Service 계층에서 처리됩니다.
  */
-@Getter
-@Builder
-@AllArgsConstructor
-public class ExecuteRemittanceCommand {
+public record ExecuteRemittanceCommand(
+        // 고객 식별자
+        String clientId,
 
-    /**
-     * 고객 식별자
-     */
-    private String clientId;
+        // 수취인 엔티티의 식별자
+        Long recipientId,
 
-    /**
-     * 수취인 엔티티의 식별자
-     */
-    private Long recipientId;
+        // 출금계좌 엔티티의 식별자
+        Long accountId,
 
-    /**
-     * 출금계좌 엔티티의 식별자
-     */
-    private Long accountId;
+        // 정기송금 엔티티의 식별자 (일회성 송금의 경우 null)
+        @Nullable Long regRemId,
 
-    /**
-     * 정기송금 엔티티의 식별자 (일회성 송금의 경우 null)
-     */
-    private Long regRemId;
+        // 보내는 통화 (e.g., "KRW")
+        CurrencyCode sendCurrency,
 
-    /**
-     * 보내는 통화 (e.g., "KRW")
-     */
-    private CurrencyCode sendCurrency;
+        // 받는 통화 (e.g., "USD")
+        CurrencyCode receiveCurrency,
 
-    /**
-     * 받는 통화 (e.g., "USD")
-     */
-    private CurrencyCode receiveCurrency;
+        // 보내는 금액 (수취 통화 기준)
+        BigDecimal targetAmount,
 
-    /**
-     * 보내는 금액 (수취 통화 기준)
-     */
-    private BigDecimal targetAmount;
+        // 송금 시작일 (정기송금의 경우 사용)
+        LocalDate startDate
+) {
 
-    /**
-     * 송금 시작일 (정기송금의 경우 사용)
-     */
-    private LocalDate startDate;
-
+    public static ExecuteRemittanceCommand of(
+            String clientId,
+            Long recipientId,
+            Long accountId,
+            Long regRemId,
+            CurrencyCode sendCurrency,
+            CurrencyCode receiveCurrency,
+            BigDecimal targetAmount,
+            LocalDate startDate
+    ) {
+        return new ExecuteRemittanceCommand(
+                clientId,
+                recipientId,
+                accountId,
+                regRemId,
+                sendCurrency,
+                receiveCurrency,
+                targetAmount,
+                startDate
+        );
+    }
 }

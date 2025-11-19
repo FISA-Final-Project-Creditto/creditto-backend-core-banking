@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.creditto.core_banking.domain.account.entity.Account;
 import org.creditto.core_banking.domain.exchange.entity.Exchange;
+import org.creditto.core_banking.domain.overseasremittance.dto.ExecuteRemittanceCommand;
 import org.creditto.core_banking.domain.remittancefee.entity.FeeRecord;
 import org.creditto.core_banking.domain.recipient.entity.Recipient;
 import org.creditto.core_banking.domain.regularremittance.entity.RegularRemittance;
@@ -110,12 +111,8 @@ public class OverseasRemittance extends BaseEntity {
      * @param recur           정기송금 엔티티 (선택 사항)
      * @param exchange        적용 환전 내역
      * @param feeRecord       적용된 수수료 내역
-     * @param clientId        고객 ID
-     * @param sendCurrency    송금 통화
-     * @param receiveCurrency 수취 통화
      * @param sendAmount      송금액
-     * @param receiveAmount   수취액
-     * @param startDate       송금 시작일
+     * @param command         해외송금 실행에 필요한 모든 데이터
      * @return 새로운 OverseasRemittance 객체
      */
     public static OverseasRemittance of(
@@ -124,12 +121,8 @@ public class OverseasRemittance extends BaseEntity {
             RegularRemittance recur,
             Exchange exchange,
             FeeRecord feeRecord,
-            String clientId,
-            CurrencyCode sendCurrency,
-            CurrencyCode receiveCurrency,
             BigDecimal sendAmount,
-            BigDecimal receiveAmount,
-            LocalDate startDate
+            ExecuteRemittanceCommand command
     ){
         return OverseasRemittance.builder()
                 .recipient(recipient)
@@ -137,12 +130,12 @@ public class OverseasRemittance extends BaseEntity {
                 .recur(recur)
                 .exchange(exchange)
                 .feeRecord(feeRecord)
-                .clientId(clientId)
-                .sendCurrency(sendCurrency)
-                .receiveCurrency(receiveCurrency)
+                .clientId(command.clientId())
+                .sendCurrency(command.sendCurrency())
+                .receiveCurrency(command.receiveCurrency())
                 .sendAmount(sendAmount)
-                .receiveAmount(receiveAmount)
-                .startDate(startDate)
+                .receiveAmount(command.targetAmount())
+                .startDate(command.startDate())
                 .remittanceStatus(RemittanceStatus.PENDING)   //기본 상태 PENDING
                 .build();
     }

@@ -9,4 +9,8 @@ public record ExchangeReq(
     CurrencyCode toCurrency,
     BigDecimal targetAmount
 ) {
+
+    public static ExchangeReq of(CurrencyCode fromCurrency, CurrencyCode toCurrency, BigDecimal targetAmount) {
+        return new ExchangeReq(fromCurrency, toCurrency, targetAmount);
+    }
 }

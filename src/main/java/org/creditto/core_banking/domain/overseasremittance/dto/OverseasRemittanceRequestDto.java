@@ -22,12 +22,6 @@ import java.time.LocalDate;
 public class OverseasRemittanceRequestDto {
 
     /**
-     * 송금을 요청하는 고객의 식별자
-     */
-    @NotBlank(message = "고객 ID는 필수입니다.")
-    private String clientId;
-
-    /**
      * 출금될 계좌의 번호
      */
     @NotBlank(message = "출금 계좌번호는 필수입니다.")

@@ -6,12 +6,13 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.validation.constraints.Size;
 import lombok.*;
+import org.creditto.core_banking.domain.overseasremittance.dto.OverseasRemittanceRequestDto;
 import org.creditto.core_banking.global.common.BaseEntity;
 import org.creditto.core_banking.global.common.CurrencyCode;
 
 @Entity
 @Getter
-@Builder
+@Builder(access = AccessLevel.PRIVATE)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PROTECTED)
 public class Recipient extends BaseEntity {
@@ -40,24 +41,15 @@ public class Recipient extends BaseEntity {
     // ex)KRW
     private CurrencyCode currencyCode;
 
-    public static Recipient of(
-            String name,
-            String phoneNo,
-            String phoneCc,
-            String bankName,
-            String bankCode,
-            String accountNo,
-            String country,
-            CurrencyCode currencyCode
-    ){
+    public static Recipient of(OverseasRemittanceRequestDto.RecipientInfo recipientInfo, CurrencyCode currencyCode) {
         return Recipient.builder()
-                .name(name)
-                .phoneNo(phoneNo)
-                .phoneCc(phoneCc)
-                .bankName(bankName)
-                .bankCode(bankCode)
-                .accountNo(accountNo)
-                .country(country)
+                .name(recipientInfo.getName())
+                .phoneNo(recipientInfo.getPhoneNo())
+                .phoneCc(recipientInfo.getPhoneCc())
+                .bankName(recipientInfo.getBankName())
+                .bankCode(recipientInfo.getBankCode())
+                .accountNo(recipientInfo.getAccountNumber())
+                .country(recipientInfo.getCountry())
                 .currencyCode(currencyCode)
                 .build();
     }
