@@ -32,10 +32,8 @@ public class Exchange extends BaseEntity {
     @Column(precision = 20, scale = 2)
     private BigDecimal toAmount;
 
-    @Column(precision = 20, scale = 2)
+    @Column(precision = 20, scale = 6)
     private BigDecimal exchangeRate; // 제공 환율
-
-
 
     public static Exchange of(ExchangeReq req, BigDecimal fromAmount, BigDecimal toAmount, BigDecimal exchangeRate) {
         return Exchange.builder()

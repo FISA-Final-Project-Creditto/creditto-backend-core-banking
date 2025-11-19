@@ -3,7 +3,6 @@ package org.creditto.core_banking.global.feign;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.creditto.core_banking.domain.exchange.dto.ExchangeRateRes;
-import org.creditto.core_banking.global.common.CurrencyCode;
 import org.creditto.core_banking.global.response.error.ErrorBaseCode;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;

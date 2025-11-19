@@ -10,4 +10,13 @@ public record RemittanceFeeReq(
         CurrencyCode currency,          // 통화 코드
         BigDecimal fromAmountInUSD      // 송금 금액 -> USD
 ) {
+
+    public static RemittanceFeeReq of(
+            BigDecimal exchangeRate,
+            BigDecimal sendAmount,
+            CurrencyCode currency,
+            BigDecimal fromAmountInUSD
+    ) {
+        return new RemittanceFeeReq(exchangeRate, sendAmount, currency, fromAmountInUSD);
+    }
 }
