@@ -32,8 +32,8 @@ public class AccountController {
         return ApiResponseUtil.success(SuccessCode.OK, accountService.getAccountByAccountNo(accountNo));
     }
 
-    @GetMapping("client/{clientId}")
-    public ResponseEntity<BaseResponse<?>> getAccountByClientId(@PathVariable String clientId) {
-        return ApiResponseUtil.success(SuccessCode.OK, accountService.getAccountByClientId(clientId));
+    @GetMapping("client/{externalUserId}")
+    public ResponseEntity<BaseResponse<?>> getAccountByClientId(@PathVariable String externalUserId) {
+        return ApiResponseUtil.success(SuccessCode.OK, accountService.getAccountByClientId(externalUserId));
     }
 }

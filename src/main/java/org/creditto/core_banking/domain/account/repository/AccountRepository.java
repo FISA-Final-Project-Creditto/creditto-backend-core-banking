@@ -14,5 +14,5 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
     Optional<Account> findByAccountNo(String accountNo);
 
     // 클라이언트 ID로 계좌 조회
-    List<Account> findByClientId(String clientId);
+    List<Account> findAccountByExternalUserId(String externalUserId);
 }

@@ -6,6 +6,8 @@ import org.creditto.core_banking.domain.account.dto.AccountRes;
 import org.creditto.core_banking.domain.account.entity.Account;
 import org.creditto.core_banking.domain.account.entity.AccountState;
 import org.creditto.core_banking.domain.account.repository.AccountRepository;
+import org.creditto.core_banking.domain.account.service.strategy.TransactionStrategy;
+import org.creditto.core_banking.domain.account.service.strategy.TransactionStrategyFactory;
 import org.creditto.core_banking.domain.transaction.entity.TxnType;
 import org.creditto.core_banking.global.response.error.ErrorBaseCode;
 import org.creditto.core_banking.global.response.exception.CustomBaseException;
@@ -81,8 +83,8 @@ public class AccountService {
         return AccountRes.from(account);
     }
 
-    public List<AccountRes> getAccountByClientId(String clientId) {
-        List<Account> accounts = accountRepository.findByClientId(clientId);
+    public List<AccountRes> getAccountByClientId(String externalUserId) {
+        List<Account> accounts = accountRepository.findAccountByExternalUserId(externalUserId);
 
         return accounts.stream()
                 .map(AccountRes::from)

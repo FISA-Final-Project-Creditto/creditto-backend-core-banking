@@ -21,7 +21,7 @@ public record AccountRes(
                 account.getBalance(),
                 account.getAccountType(),
                 account.getAccountState(),
-                account.getClientId()
+                account.getExternalUserId()
         );
     }
 }

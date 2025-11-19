@@ -7,8 +7,8 @@ import org.creditto.core_banking.domain.account.entity.AccountState;
 import org.creditto.core_banking.domain.account.entity.AccountType;
 import org.creditto.core_banking.domain.account.repository.AccountRepository;
 import org.creditto.core_banking.domain.account.service.AccountService;
-import org.creditto.core_banking.domain.account.service.TransactionStrategy;
-import org.creditto.core_banking.domain.account.service.TransactionStrategyFactory;
+import org.creditto.core_banking.domain.account.service.strategy.TransactionStrategy;
+import org.creditto.core_banking.domain.account.service.strategy.TransactionStrategyFactory;
 import org.creditto.core_banking.domain.transaction.entity.TxnType;
 import org.creditto.core_banking.global.response.error.ErrorBaseCode;
 import org.creditto.core_banking.global.response.exception.CustomBaseException;
@@ -184,7 +184,7 @@ class AccountServiceTest {
         );
 
         
-        given(accountRepository.findByClientId(clientId))
+        given(accountRepository.findAccountByExternalUserId(clientId))
                 .willReturn(List.of(account1, account2));
         
         // when

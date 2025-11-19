@@ -22,6 +22,7 @@ public class Account extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(updatable = false, unique = true)
     private String accountNo;
 
     private String accountName;
@@ -35,16 +36,17 @@ public class Account extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private AccountState accountState;
 
-    private String clientId;
+    @Column(updatable = false)
+    private String externalUserId;
 
-    public static Account of(String accountNo, String accountName, BigDecimal balance, AccountType accountType, AccountState accountState, String clientId) {
+    public static Account of(String accountNo, String accountName, BigDecimal balance, AccountType accountType, AccountState accountState, String externalUserId) {
         return Account.builder()
                 .accountNo(accountNo) // accountNo는 null이 될 수 있으며, @PrePersist에서 생성
                 .accountName(accountName)
                 .balance(balance)
                 .accountType(accountType)
                 .accountState(accountState)
-                .clientId(clientId)
+                .externalUserId(externalUserId)
                 .build();
     }
 
