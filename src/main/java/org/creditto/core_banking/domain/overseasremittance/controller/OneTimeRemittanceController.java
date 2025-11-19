@@ -5,8 +5,10 @@ import lombok.RequiredArgsConstructor;
 import org.creditto.core_banking.domain.overseasremittance.dto.OverseasRemittanceRequestDto;
 import org.creditto.core_banking.domain.overseasremittance.dto.OverseasRemittanceResponseDto;
 import org.creditto.core_banking.domain.overseasremittance.service.OneTimeRemittanceService;
+import org.creditto.core_banking.global.response.ApiResponseUtil;
 import org.creditto.core_banking.global.response.BaseResponse;
 import org.creditto.core_banking.global.response.SuccessCode;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -28,9 +30,7 @@ public class OneTimeRemittanceController {
      * @return 처리 결과를 담은 응답 DTO ({@link OverseasRemittanceResponseDto})
      */
     @PostMapping
-    public BaseResponse<OverseasRemittanceResponseDto> processRemittance(@Valid @RequestBody OverseasRemittanceRequestDto request) {
-        var result = oneTimeRemittanceService.processRemittance(request);
-        return (BaseResponse<OverseasRemittanceResponseDto>) BaseResponse.of(SuccessCode.OK, result);
+    public ResponseEntity<?> processRemittance(@Valid @RequestBody OverseasRemittanceRequestDto request) {
+        return ApiResponseUtil.success(SuccessCode.OK, oneTimeRemittanceService.processRemittance(request));
     }
-
 }

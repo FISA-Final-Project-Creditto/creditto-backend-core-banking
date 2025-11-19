@@ -4,8 +4,10 @@ package org.creditto.core_banking.domain.overseasremittance.controller;
 import lombok.RequiredArgsConstructor;
 import org.creditto.core_banking.domain.overseasremittance.dto.OverseasRemittanceResponseDto;
 import org.creditto.core_banking.domain.overseasremittance.service.RemittanceQueryService;
+import org.creditto.core_banking.global.response.ApiResponseUtil;
 import org.creditto.core_banking.global.response.BaseResponse;
 import org.creditto.core_banking.global.response.SuccessCode;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -31,8 +33,7 @@ public class RemittanceQueryController {
      * @return 해당 고객의 송금 내역 리스트 ({@link OverseasRemittanceResponseDto})
      */
     @GetMapping
-    public BaseResponse<List<OverseasRemittanceResponseDto>> getRemittanceList(@RequestParam String clientId) {
-        List<OverseasRemittanceResponseDto> result = remittanceService.getRemittanceList(clientId);
-        return (BaseResponse<List<OverseasRemittanceResponseDto>>) BaseResponse.of(SuccessCode.OK, result);
+    public ResponseEntity<?> getRemittanceList(@RequestParam String clientId) {
+        return ApiResponseUtil.success(SuccessCode.OK, remittanceService.getRemittanceList(clientId));
     }
 }
