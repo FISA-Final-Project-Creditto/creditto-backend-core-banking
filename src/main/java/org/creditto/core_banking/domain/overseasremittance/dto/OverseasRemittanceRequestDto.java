@@ -62,11 +62,11 @@ public class OverseasRemittanceRequestDto {
     private CurrencyCode receiveCurrency;
 
     /**
-     * 보내는 금액 (송금 통화 기준)
+     * 보내는 금액 (수취 통화 기준)
      */
     @NotNull(message = "송금액은 필수입니다.")
     @Positive(message = "송금액은 0보다 커야 합니다.")
-    private BigDecimal sendAmount;
+    private BigDecimal targetAmount;
 
     /**
      * 해외송금 수취인의 상세 정보를 담는 내부 클래스입니다.
@@ -100,13 +100,19 @@ public class OverseasRemittanceRequestDto {
         private String bankCode;
 
         /**
+         * 수취인 전화 국가번호
+         */
+        @NotBlank(message = "수취인 전화 국가번호는 필수입니다.")
+        private String phoneCc;
+
+        /**
          * 수취인 연락처
          */
         @NotBlank(message = "수취인 연락처는 필수입니다.")
         private String phoneNo;
 
         /**
-         * 수취인 거주 국가 (ISO 3166-1 Alpha-3 code, e.g. "USA")
+         * 수취인 거주 국가 ("USA")
          */
         @NotBlank(message = "수취인 국가는 필수입니다.")
         private String country;

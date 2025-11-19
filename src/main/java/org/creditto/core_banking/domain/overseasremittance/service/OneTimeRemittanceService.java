@@ -38,12 +38,13 @@ public class OneTimeRemittanceService {
         Account account = accountRepository.findByAccountNo(request.getAccountNumber())
                 .orElseThrow(() -> new CustomBaseException(ErrorBaseCode.NOT_FOUND_ACCOUNT));
 
+        //TODO:기존에 등록된 수취인이 있는지 먼저 확인하고, 없는 경우에만 새로 생성하는 로직을 추가
         // 수취인 정보 처리 (항상 신규 생성)
         OverseasRemittanceRequestDto.RecipientInfo recipientInfo = request.getRecipientInfo();
         Recipient newRecipient = Recipient.of(
                 recipientInfo.getName(),
                 recipientInfo.getPhoneNo(),
-                null, // phoneCc는 DTO에 없으므로 null 처리
+                recipientInfo.getPhoneCc(),
                 recipientInfo.getBankName(),
                 recipientInfo.getBankCode(),
                 recipientInfo.getAccountNumber(),
@@ -60,7 +61,7 @@ public class OneTimeRemittanceService {
                 .regRemId(request.getRecurId())
                 .sendCurrency(request.getSendCurrency())
                 .receiveCurrency(request.getReceiveCurrency())
-                .sendAmount(request.getSendAmount())
+                .targetAmount(request.getTargetAmount())
                 .startDate(request.getStartDate())
                 .build();
 

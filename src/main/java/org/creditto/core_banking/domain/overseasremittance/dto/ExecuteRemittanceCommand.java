@@ -49,9 +49,9 @@ public class ExecuteRemittanceCommand {
     private CurrencyCode receiveCurrency;
 
     /**
-     * 보내는 금액 (송금 통화 기준)
+     * 보내는 금액 (수취 통화 기준)
      */
-    private BigDecimal sendAmount;
+    private BigDecimal targetAmount;
 
     /**
      * 송금 시작일 (정기송금의 경우 사용)

@@ -78,13 +78,16 @@ public class RemittanceProcessorService {
                 .orElse(null);
 
         // 1. ExchangeService를 통해 환전 처리 및 결과(DTO) 수신
-        ExchangeReq exchangeReq = new ExchangeReq(command.getSendCurrency(), command.getReceiveCurrency(), command.getSendAmount());
+        ExchangeReq exchangeReq = new ExchangeReq(command.getSendCurrency(), command.getReceiveCurrency(), command.getTargetAmount());
         ExchangeRes exchangeRes = exchangeService.exchange(exchangeReq);
+
+        // 실제 송금해야 할 금액
+        BigDecimal actualSendAmount = exchangeRes.exchangeAmount();
 
         // 2. 수수료 계산을 위해 RemittanceFeeService 호출
         RemittanceFeeReq feeReq = new RemittanceFeeReq(
-            exchangeRes.exchangeRate(), // command.getExchangeRate() 대신 exchangeRes에서 가져옴
-            command.getSendAmount(),
+            exchangeRes.exchangeRate(),
+                actualSendAmount,  // 실제 보낼 금액으로 수수료 계산
             command.getReceiveCurrency(),
             exchangeRes.fromAmountInUSD() // 환전 결과에서 USD 환율 가져오기
         );
@@ -92,14 +95,13 @@ public class RemittanceProcessorService {
         FeeRecord feeRecord = remittanceFeeService.calculateAndSaveFee(feeReq);
         BigDecimal totalFee = feeRecord.getTotalFee();
 
-        // 금액 및 수수료 계산
-        BigDecimal sendAmount = command.getSendAmount();
-        BigDecimal totalDeduction = sendAmount.add(totalFee);
+        // 총 차감될 금액 계산 (실제 보낼 금액 + 총 수수료)
+        BigDecimal totalDeduction = actualSendAmount.add(totalFee);
 
         // 잔액 확인
         if (account.getBalance().compareTo(totalDeduction) < 0) {
             // 실패 트랜잭션 기록
-            transactionService.saveTransaction(account, sendAmount, TxnType.WITHDRAWAL, null, TxnResult.FAILURE);
+            transactionService.saveTransaction(account, actualSendAmount, TxnType.WITHDRAWAL, null, TxnResult.FAILURE);
             throw new CustomBaseException(ErrorBaseCode.INSUFFICIENT_FUNDS);
         }
 
@@ -108,8 +110,6 @@ public class RemittanceProcessorService {
          Exchange savedExchange = exchangeRepository.findById(exchangeId)
                  .orElseThrow(() -> new IllegalArgumentException("환전 내역을 찾을 수 없습니다."));
 
-        // 4. 최종 수취 금액은 exchangeRes에서 가져옴
-        BigDecimal receiveAmount = exchangeRes.exchangeAmount();
 
         // 5. 송금 이력 생성
         OverseasRemittance overseasRemittance = OverseasRemittance.of(
@@ -120,9 +120,9 @@ public class RemittanceProcessorService {
                 feeRecord,
                 command.getClientId(),
                 command.getSendCurrency(),
-                command.getReceiveCurrency(), // receiveCurrency
-                sendAmount,
-                receiveAmount,
+                command.getReceiveCurrency(),
+                actualSendAmount,
+                command.getTargetAmount(),
                 command.getStartDate()
         );
         remittanceRepository.save(overseasRemittance);
@@ -134,8 +134,8 @@ public class RemittanceProcessorService {
         }
 
         // 송금액 차감 및 거래 내역 생성
-        account.withdraw(sendAmount);
-        transactionService.saveTransaction(account, sendAmount, TxnType.WITHDRAWAL, overseasRemittance.getRemittanceId(), TxnResult.SUCCESS);
+        account.withdraw(actualSendAmount);
+        transactionService.saveTransaction(account, actualSendAmount, TxnType.WITHDRAWAL, overseasRemittance.getRemittanceId(), TxnResult.SUCCESS);
 
         accountRepository.save(account);
 
