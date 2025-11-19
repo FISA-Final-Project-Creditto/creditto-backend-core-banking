@@ -35,8 +35,7 @@ public class AccountController {
 
     @GetMapping("/{accountId}/balance")
     public ResponseEntity<BaseResponse<?>> getAccountBalanceByAccountId(@PathVariable Long accountId) {
-        AccountRes accountRes = accountService.getAccountById(accountId);
-        return ApiResponseUtil.success(SuccessCode.OK, accountRes.balance());
+        return ApiResponseUtil.success(SuccessCode.OK, accountService.getAccountBalanceById(accountId));
     }
 
     @GetMapping("/{accountNo}")
