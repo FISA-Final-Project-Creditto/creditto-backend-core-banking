@@ -89,11 +89,16 @@ public class Account extends BaseEntity {
 
     // 출금
     public void withdraw(BigDecimal amount) {
-        if (this.balance.compareTo(amount) < 0) {
+        if (!this.checkSufficientBalance(amount)) {
             throw new CustomBaseException(ErrorBaseCode.INSUFFICIENT_FUNDS);
         }
 
         this.balance = balance.subtract(amount);
+    }
+
+    // 출금 가능한지 확인
+    public boolean checkSufficientBalance(BigDecimal amount) {
+        return this.balance.compareTo(amount) > 0;
     }
 
 }
