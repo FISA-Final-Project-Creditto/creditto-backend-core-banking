@@ -12,7 +12,7 @@ import java.time.LocalDate;
  */
 public record ExecuteRemittanceCommand(
         // 고객 식별자
-        String externalUserId,
+        String clientId,
 
         // 수취인 엔티티의 식별자
         Long recipientId,
@@ -37,7 +37,7 @@ public record ExecuteRemittanceCommand(
 ) {
 
     public static ExecuteRemittanceCommand of(
-            String externalUserId,
+            String clientId,
             Long recipientId,
             Long accountId,
             Long regRemId,
@@ -47,7 +47,7 @@ public record ExecuteRemittanceCommand(
             LocalDate startDate
     ) {
         return new ExecuteRemittanceCommand(
-                externalUserId,
+                clientId,
                 recipientId,
                 accountId,
                 regRemId,

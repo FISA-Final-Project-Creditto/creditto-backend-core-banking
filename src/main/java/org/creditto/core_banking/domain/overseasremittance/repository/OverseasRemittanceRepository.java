@@ -18,7 +18,7 @@ public interface OverseasRemittanceRepository extends JpaRepository<OverseasRemi
      * 특정 고객(Client)의 모든 송금 내역을 연관된 엔티티(수취인, 계좌, 환전, 수수료, 정기송금)와 함께 조회합니다.
      * Fetch Join을 사용하여 N+1 쿼리 문제를 방지합니다.
      *
-     * @param externalUserId 조회할 고객의 ID
+     * @param clientId 조회할 고객의 ID
      * @return 조회된 송금 내역 리스트 ({@link OverseasRemittance})
      */
     @Query("SELECT r FROM OverseasRemittance r " +
@@ -27,6 +27,6 @@ public interface OverseasRemittanceRepository extends JpaRepository<OverseasRemi
             "JOIN FETCH r.exchange " +
             "JOIN FETCH r.feeRecord " +
             "LEFT JOIN FETCH r.recur " +
-            "WHERE r.externalUserId = :externalUserId")
-    List<OverseasRemittance> findByClientIdWithDetails(@Param("externalUserId") String externalUserId);
+            "WHERE r.clientId = :clientId")
+    List<OverseasRemittance> findByClientIdWithDetails(@Param("clientId") String clientId);
 }

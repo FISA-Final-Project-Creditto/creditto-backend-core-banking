@@ -105,7 +105,7 @@ public class OverseasRemittanceResponseDto {
     public static OverseasRemittanceResponseDto from(OverseasRemittance overseasRemittance) {
         return OverseasRemittanceResponseDto.builder()
                 .remittanceId(overseasRemittance.getRemittanceId())
-                .clientId(overseasRemittance.getExternalUserId())
+                .clientId(overseasRemittance.getClientId())
                 .recipientId(overseasRemittance.getRecipient().getRecipientId())
                 .recipientName(overseasRemittance.getRecipient().getName())
                 .accountId(overseasRemittance.getAccount().getId())
