@@ -6,8 +6,9 @@ import org.creditto.core_banking.domain.account.repository.AccountRepository;
 import org.creditto.core_banking.domain.overseasremittance.dto.ExecuteRemittanceCommand;
 import org.creditto.core_banking.domain.overseasremittance.dto.OverseasRemittanceRequestDto;
 import org.creditto.core_banking.domain.overseasremittance.dto.OverseasRemittanceResponseDto;
+import org.creditto.core_banking.domain.recipient.dto.RecipientCreateDto;
 import org.creditto.core_banking.domain.recipient.entity.Recipient;
-import org.creditto.core_banking.domain.recipient.repository.RecipientRepository;
+import org.creditto.core_banking.domain.recipient.service.RecipientFactory;
 import org.creditto.core_banking.global.response.error.ErrorBaseCode;
 import org.creditto.core_banking.global.response.exception.CustomBaseException;
 import org.springframework.stereotype.Service;
@@ -24,7 +25,7 @@ public class OneTimeRemittanceService {
 
     private final RemittanceProcessorService remittanceProcessorService;
     private final AccountRepository accountRepository;
-    private final RecipientRepository recipientRepository;
+    private final RecipientFactory recipientFactory;
 
     /**
      * 클라이언트의 해외송금 요청을 받아 전체 송금 프로세스를 조정합니다.
@@ -38,19 +39,29 @@ public class OneTimeRemittanceService {
         Account account = accountRepository.findByAccountNo(request.getAccountNumber())
                 .orElseThrow(() -> new CustomBaseException(ErrorBaseCode.NOT_FOUND_ACCOUNT));
 
-        // TODO : 기존에 등록된 수취인이 있는지 먼저 확인하고, 없는 경우에만 새로 생성하는 로직을 추가
-        // 수취인 정보 처리 (항상 신규 생성)
+        // RecipientFactory를 통해 수취인 조회 또는 생성
         OverseasRemittanceRequestDto.RecipientInfo recipientInfo = request.getRecipientInfo();
-        Recipient savedRecipient = recipientRepository.save(Recipient.of(recipientInfo, request.getReceiveCurrency()));
+        RecipientCreateDto recipientCreateDto = new RecipientCreateDto(
+                recipientInfo.getName(),
+                recipientInfo.getAccountNumber(),
+                recipientInfo.getBankName(),
+                recipientInfo.getBankCode(),
+                recipientInfo.getPhoneCc(),
+                recipientInfo.getPhoneNo(),
+                recipientInfo.getCountry(),
+                recipientInfo.getReceiveCurrency()
+        );
+        Recipient recipient = recipientFactory.findOrCreate(recipientCreateDto);
+
 
         // ExecuteRemittanceCommand 생성
         ExecuteRemittanceCommand command = ExecuteRemittanceCommand.of(
                 userId,
-                savedRecipient.getRecipientId(),
+                recipient.getRecipientId(),
                 account.getId(),
                 request.getRecurId(),
                 request.getSendCurrency(),
-                request.getReceiveCurrency(),
+                recipient.getCurrencyCode(),
                 request.getTargetAmount(),
                 request.getStartDate()
         );

@@ -49,11 +49,11 @@ public class OverseasRemittanceRequestDto {
     @NotNull(message = "송금 통화는 필수입니다.")
     private CurrencyCode sendCurrency;
 
-    /**
-     * 받는 통화 (e.g. "USD")
-     */
-    @NotNull(message = "수취 통화는 필수입니다.")
-    private CurrencyCode receiveCurrency;
+//    /**
+//     * 받는 통화 (e.g. "USD")
+//     */
+//    @NotNull(message = "수취 통화는 필수입니다.")
+//    private CurrencyCode receiveCurrency;
 
     /**
      * 보내는 금액 (수취 통화 기준)
@@ -110,5 +110,11 @@ public class OverseasRemittanceRequestDto {
          */
         @NotBlank(message = "수취인 국가는 필수입니다.")
         private String country;
+
+        /**
+         * 받는 통화 (e.g. "USD")
+         */
+        @NotNull(message = "수취 통화는 필수입니다.")
+        private CurrencyCode receiveCurrency;
     }
 }
