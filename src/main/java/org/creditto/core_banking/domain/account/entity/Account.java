@@ -39,7 +39,7 @@ public class Account extends BaseEntity {
 
     public static Account of(String accountNo, String accountName, BigDecimal balance, AccountType accountType, AccountState accountState, String clientId) {
         return Account.builder()
-                .accountNo(accountNo) // accountNo는 null이 될 수 있으며, @PrePersist에서 생성
+                .accountNo(accountNo)
                 .accountName(accountName)
                 .balance(balance)
                 .accountType(accountType)
