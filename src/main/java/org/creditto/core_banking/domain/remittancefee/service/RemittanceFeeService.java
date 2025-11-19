@@ -42,13 +42,13 @@ public class RemittanceFeeService {
         CurrencyCode currency = req.currency(); // 환율 통화
         // The request's last field is actually the KRW per USD rate.
         // Compute the USD-equivalent amount from provided currency amount and rates for flat fee tiering.
-        BigDecimal usdExchangeRate = req.fromAmountInUSD(); // KRW per 1 USD
-        BigDecimal amountInKRWForFlat = normalizeAmountByCurrency(sendAmount, currency)
-                .multiply(exchangeRate);
-        BigDecimal sendAmountForUSD = amountInKRWForFlat.divide(usdExchangeRate, CALCULATION_SCALE, RoundingMode.HALF_UP);
+        BigDecimal sendAmountInUSD = req.fromAmountInUSD(); // KRW per 1 USD
+//        BigDecimal amountInKRWForFlat = normalizeAmountByCurrency(sendAmount, currency)
+//                .multiply(exchangeRate);
+//        BigDecimal sendAmountForUSD = amountInKRWForFlat.divide(usdExchangeRate, CALCULATION_SCALE, RoundingMode.HALF_UP);
 
         // 수수료 계산에 사용될 각 정책 엔티티 조회
-        FlatServiceFee flatFeePolicy = getFlatFeePolicy(sendAmountForUSD);
+        FlatServiceFee flatFeePolicy = getFlatFeePolicy(sendAmountInUSD);
         PctServiceFee pctFeePolicy = getPctFeePolicy();
         NetworkFee networkFeePolicy = getNetworkFeePolicy(currency);
 
