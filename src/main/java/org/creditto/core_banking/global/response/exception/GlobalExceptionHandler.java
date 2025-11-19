@@ -8,6 +8,7 @@ import org.creditto.core_banking.global.response.BaseResponse;
 import org.creditto.core_banking.global.response.error.ErrorBaseCode;
 import org.springframework.core.NestedExceptionUtils;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.transaction.TransactionSystemException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -64,6 +65,12 @@ public class GlobalExceptionHandler {
         return ApiResponseUtil.failure(ErrorBaseCode.BAD_REQUEST_ILLEGALARGUMENTS, e.getMessage());
     }
 
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<BaseResponse<?>> handleHttpMessageNotReadableException(final HttpMessageNotReadableException e) {
+        logWarn(e);
+        return ApiResponseUtil.failure(ErrorBaseCode.BAD_REQUEST_EMPTY_BODY);
+    }
+    
     /**
      * 404 - EntityNotFoundException
      * 예외 내용 : 리소스에 대한 엔티티를 찾을 수 없는 오류
