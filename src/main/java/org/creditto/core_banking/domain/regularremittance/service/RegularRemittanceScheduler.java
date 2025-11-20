@@ -20,6 +20,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.IntStream;
 
 @Slf4j
@@ -60,8 +61,8 @@ public class RegularRemittanceScheduler {
         if (now.getDayOfWeek() == DayOfWeek.SATURDAY || now.getDayOfWeek() == DayOfWeek.SUNDAY) {
             int updatedCount = monthlyRegularRemittanceRepository.bulkUpdateRegRemStatusByScheduledDates(
                     scheduledDates,
-                    RegRemStatus.ACTIVE,
-                    RegRemStatus.DELAYED
+                    RegRemStatus.DELAYED,
+                    RegRemStatus.ACTIVE
             );
             total += updatedCount;
             log.info("[RegularRemittanceScheduler {}/{}/{}] 월간 정기 해외송금 Job : 주말로 인한 송금 지연, 지연된 정기 송금 수 = {}",
@@ -76,7 +77,7 @@ public class RegularRemittanceScheduler {
             slice = monthlyRegularRemittanceRepository
                     .findMonthlyRegularRemittanceByScheduledDateInAndRegRemStatusIn(
                             scheduledDates,
-                            List.of(RegRemStatus.ACTIVE, RegRemStatus.DELAYED),
+                            Set.of(RegRemStatus.ACTIVE, RegRemStatus.DELAYED),
                             PageRequest.of(page, SIZE)
                     );
 
@@ -108,9 +109,9 @@ public class RegularRemittanceScheduler {
 
         do {
             slice = weeklyRegularRemittanceRepository
-                    .findWeeklyRegularRemittanceByScheduledDayAndRegRemStatus(
+                    .findWeeklyRegularRemittanceByScheduledDayAndRegRemStatusIn(
                             dayOfWeek,
-                            RegRemStatus.ACTIVE,
+                            Set.of(RegRemStatus.ACTIVE, RegRemStatus.DELAYED),
                             PageRequest.of(page, SIZE)
                     );
 

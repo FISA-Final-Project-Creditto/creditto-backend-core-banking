@@ -19,17 +19,6 @@ public interface MonthlyRegularRemittanceRepository extends JpaRepository<Monthl
             "JOIN FETCH m.account " +
             "JOIN FETCH m.recipient " +
             "WHERE m.scheduledDate IN :scheduledDates " +
-            "AND m.regRemStatus = :regRemStatus"
-    )
-    Page<MonthlyRegularRemittance> findMonthlyRegularRemittanceByScheduledDateInAndRegRemStatus(
-            @Param("scheduledDates") Collection<Integer> scheduledDates,
-            @Param("regRemStatus") RegRemStatus regRemStatus,
-            Pageable pageable);
-
-    @Query("SELECT m FROM MonthlyRegularRemittance m " +
-            "JOIN FETCH m.account " +
-            "JOIN FETCH m.recipient " +
-            "WHERE m.scheduledDate IN :scheduledDates " +
             "AND m.regRemStatus IN :regRemStatuses"
     )
     Page<MonthlyRegularRemittance> findMonthlyRegularRemittanceByScheduledDateInAndRegRemStatusIn(

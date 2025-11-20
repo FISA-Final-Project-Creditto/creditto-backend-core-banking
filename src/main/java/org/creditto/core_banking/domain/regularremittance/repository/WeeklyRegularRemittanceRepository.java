@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.DayOfWeek;
+import java.util.Collection;
 
 @Repository
 public interface WeeklyRegularRemittanceRepository extends JpaRepository<WeeklyRegularRemittance, Long> {
@@ -18,10 +19,10 @@ public interface WeeklyRegularRemittanceRepository extends JpaRepository<WeeklyR
             "JOIN FETCH w.account " +
             "JOIN FETCH w.recipient " +
             "WHERE w.scheduledDay = :scheduledDay " +
-            "AND w.regRemStatus = :regRemStatus")
-    Page<WeeklyRegularRemittance> findWeeklyRegularRemittanceByScheduledDayAndRegRemStatus(
+            "AND w.regRemStatus IN :regRemStatus")
+    Page<WeeklyRegularRemittance> findWeeklyRegularRemittanceByScheduledDayAndRegRemStatusIn(
             @Param("scheduledDay") DayOfWeek scheduledDay,
-            @Param("regRemStatus") RegRemStatus regRemStatus,
+            @Param("regRemStatus") Collection<RegRemStatus> regRemStatus,
             Pageable pageable
     );
 }
