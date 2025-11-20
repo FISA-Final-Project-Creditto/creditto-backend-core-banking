@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Positive;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import org.creditto.core_banking.domain.recipient.dto.RecipientCreateDto;
 import org.creditto.core_banking.global.common.CurrencyCode;
 
 import java.math.BigDecimal;
@@ -48,12 +49,6 @@ public class OverseasRemittanceRequestDto {
      */
     @NotNull(message = "송금 통화는 필수입니다.")
     private CurrencyCode sendCurrency;
-
-    /**
-     * 받는 통화 (e.g. "USD")
-     */
-    @NotNull(message = "수취 통화는 필수입니다.")
-    private CurrencyCode receiveCurrency;
 
     /**
      * 보내는 금액 (수취 통화 기준)
@@ -110,5 +105,24 @@ public class OverseasRemittanceRequestDto {
          */
         @NotBlank(message = "수취인 국가는 필수입니다.")
         private String country;
+
+        /**
+         * 받는 통화 (e.g. "USD")
+         */
+        @NotNull(message = "수취 통화는 필수입니다.")
+        private CurrencyCode receiveCurrency;
+
+        public RecipientCreateDto toRecipientCreateDto() {
+            return new RecipientCreateDto(
+                this.name,
+                this.accountNumber,
+                this.bankName,
+                this.bankCode,
+                this.phoneCc,
+                this.phoneNo,
+                this.country,
+                this.receiveCurrency
+            );
+        }
     }
 }

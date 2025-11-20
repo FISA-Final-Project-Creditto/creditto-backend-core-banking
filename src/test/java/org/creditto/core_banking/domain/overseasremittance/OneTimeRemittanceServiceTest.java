@@ -2,15 +2,15 @@ package org.creditto.core_banking.domain.overseasremittance;
 
 import org.creditto.core_banking.domain.account.entity.Account;
 import org.creditto.core_banking.domain.account.repository.AccountRepository;
-import org.creditto.core_banking.domain.exchange.service.ExchangeService;
 import org.creditto.core_banking.domain.overseasremittance.dto.ExecuteRemittanceCommand;
 import org.creditto.core_banking.domain.overseasremittance.dto.OverseasRemittanceRequestDto;
 import org.creditto.core_banking.domain.overseasremittance.dto.OverseasRemittanceResponseDto;
 import org.creditto.core_banking.domain.overseasremittance.entity.RemittanceStatus;
 import org.creditto.core_banking.domain.overseasremittance.service.OneTimeRemittanceService;
 import org.creditto.core_banking.domain.overseasremittance.service.RemittanceProcessorService;
+import org.creditto.core_banking.domain.recipient.dto.RecipientCreateDto;
 import org.creditto.core_banking.domain.recipient.entity.Recipient;
-import org.creditto.core_banking.domain.recipient.repository.RecipientRepository;
+import org.creditto.core_banking.domain.recipient.service.RecipientFactory;
 import org.creditto.core_banking.global.common.CurrencyCode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -40,9 +40,7 @@ class OneTimeRemittanceServiceTest {
     @Mock
     private AccountRepository accountRepository;
     @Mock
-    private RecipientRepository recipientRepository;
-    @Mock
-    private ExchangeService exchangeService;
+    private RecipientFactory recipientFactory;
 
     @InjectMocks
     private OneTimeRemittanceService oneTimeRemittanceService;
@@ -53,6 +51,7 @@ class OneTimeRemittanceServiceTest {
     private Recipient mockRecipient;
     private OverseasRemittanceRequestDto baseRequest;
     private OverseasRemittanceRequestDto.RecipientInfo mockRecipientInfo;
+    private RecipientCreateDto mockRecipientCreateDto;
 
     @BeforeEach
     void setUp() {
@@ -67,22 +66,33 @@ class OneTimeRemittanceServiceTest {
                 .bankName("Test Bank")
                 .bankCode("CHASUS33XXX")
                 .country("USA")
+                .receiveCurrency(CurrencyCode.USD)
                 .build();
 
-        mockRecipient = Recipient.of(mockRecipientInfo, CurrencyCode.USD);
+        mockRecipientCreateDto = new RecipientCreateDto(
+                mockRecipientInfo.getName(),
+                mockRecipientInfo.getAccountNumber(),
+                mockRecipientInfo.getBankName(),
+                mockRecipientInfo.getBankCode(),
+                mockRecipientInfo.getPhoneCc(),
+                mockRecipientInfo.getPhoneNo(),
+                mockRecipientInfo.getCountry(),
+                CurrencyCode.USD
+        );
+
+        mockRecipient = Recipient.of(mockRecipientCreateDto);
 
         baseRequest = OverseasRemittanceRequestDto.builder()
             .accountNumber(mockAccount.getAccountNo()) // 변경: accountId -> accountNumber
             .recipientInfo(mockRecipientInfo) // 변경: recipientId -> RecipientInfo
             .sendCurrency(CurrencyCode.KRW)
-            .receiveCurrency(CurrencyCode.USD)
             .targetAmount(BigDecimal.valueOf(10_000))
             .startDate(LocalDate.now())
             .build();
 
         // Mocking behavior for dependencies
         given(accountRepository.findByAccountNo(mockAccount.getAccountNo())).willReturn(Optional.of(mockAccount));
-        given(recipientRepository.save(any(Recipient.class))).willReturn(mockRecipient);
+        given(recipientFactory.findOrCreate(any(RecipientCreateDto.class))).willReturn(mockRecipient);
     }
 
     @Test
@@ -111,7 +121,8 @@ class OneTimeRemittanceServiceTest {
         assertThat(result.getRecipientName()).isEqualTo("John Doe");
         assertThat(result.getRemittanceStatus()).isEqualTo(RemittanceStatus.COMPLETED);
 
-        // OneTimeRemittanceService가 RemittanceProcessorService.execute를 호출했는지 검증
+        // OneTimeRemittanceService가 RecipientFactory와 RemittanceProcessorService.execute를 호출했는지 검증
+        verify(recipientFactory).findOrCreate(any(RecipientCreateDto.class));
         verify(remittanceProcessorService).execute(any(ExecuteRemittanceCommand.class));
     }
 
@@ -130,7 +141,7 @@ class OneTimeRemittanceServiceTest {
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessage(errorMessage);
 
-        // OneTimeRemittanceService가 RemittanceProcessorService.execute를 호출했는지 검증
+        verify(recipientFactory).findOrCreate(any(RecipientCreateDto.class));
         verify(remittanceProcessorService).execute(any(ExecuteRemittanceCommand.class));
     }
 }
