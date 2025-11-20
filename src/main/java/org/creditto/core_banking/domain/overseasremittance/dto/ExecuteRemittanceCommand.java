@@ -5,6 +5,7 @@ import org.springframework.lang.Nullable;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.ZoneId;
 
 /**
  * 서비스 계층 내부에서 해외송금 실행에 필요한 모든 데이터를 전달하는 불변 Command 객체입니다.
@@ -68,7 +69,7 @@ public record ExecuteRemittanceCommand(
                 regularRemittance.getSendCurrency(),
                 regularRemittance.getReceivedCurrency(),
                 regularRemittance.getSendAmount(),
-                LocalDate.now()
+                LocalDate.now(ZoneId.of("Asia/Seoul"))
         );
     }
 }

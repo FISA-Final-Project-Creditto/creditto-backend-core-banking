@@ -30,7 +30,7 @@ public abstract class RegularRemittance {
     @ManyToOne(fetch = FetchType.LAZY)
     private Account account;
 
-    @OneToOne
+    @OneToOne(fetch = FetchType.LAZY)
     private Recipient recipient;
 
     private CurrencyCode sendCurrency;

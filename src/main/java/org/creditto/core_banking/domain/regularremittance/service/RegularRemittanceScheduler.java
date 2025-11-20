@@ -14,6 +14,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -33,6 +34,7 @@ public class RegularRemittanceScheduler {
     private static final int SIZE = 1000;
     private static final ZoneId ZONE_ID = ZoneId.of("Asia/Seoul");
 
+    @Transactional
     @Scheduled(cron = "${scheduler.remittance.monthly-cron}")
     public void executeMonthlyRegularRemittance() {
         LocalDate now = LocalDate.now(ZONE_ID);
@@ -86,6 +88,7 @@ public class RegularRemittanceScheduler {
         );
     }
 
+    @Transactional
     @Scheduled(cron = "${scheduler.remittance.weekly-cron}")
     public void executeWeeklyRegularRemittance() {
         LocalDate now = LocalDate.now(ZONE_ID);
@@ -122,10 +125,15 @@ public class RegularRemittanceScheduler {
     private void executeRemittanceForRegRemList(List<? extends RegularRemittance> remittances) {
         remittances.forEach(remittance -> {
             ExecuteRemittanceCommand remittanceCommand = ExecuteRemittanceCommand.of(remittance);
-            remittanceProcessorService.execute(remittanceCommand);
-            // 연기된 작업 수행 후 ACTIVE로 수정
-            if (remittance.getRegRemStatus().equals(RegRemStatus.DELAYED)) {
-                remittance.updateRegRemStatus(RegRemStatus.ACTIVE);
+            try {
+                remittanceProcessorService.execute(remittanceCommand);
+                // 연기된 작업 수행 후 ACTIVE로 수정
+                if (remittance.getRegRemStatus().equals(RegRemStatus.DELAYED)) {
+                    remittance.updateRegRemStatus(RegRemStatus.ACTIVE);
+                }
+            } catch (Exception e) {
+                log.error("[RegularRemittanceScheduler] 정기 송금 실행에 실패하였습니다. remittanceId={}, error={}", remittance.getRegRemId(), e.getMessage());
+                remittance.updateRegRemStatus(RegRemStatus.DELAYED);
             }
         });
     }
