@@ -40,17 +40,7 @@ public class OneTimeRemittanceService {
                 .orElseThrow(() -> new CustomBaseException(ErrorBaseCode.NOT_FOUND_ACCOUNT));
 
         // RecipientFactory를 통해 수취인 조회 또는 생성
-        OverseasRemittanceRequestDto.RecipientInfo recipientInfo = request.getRecipientInfo();
-        RecipientCreateDto recipientCreateDto = new RecipientCreateDto(
-                recipientInfo.getName(),
-                recipientInfo.getAccountNumber(),
-                recipientInfo.getBankName(),
-                recipientInfo.getBankCode(),
-                recipientInfo.getPhoneCc(),
-                recipientInfo.getPhoneNo(),
-                recipientInfo.getCountry(),
-                recipientInfo.getReceiveCurrency()
-        );
+        RecipientCreateDto recipientCreateDto = createRecipientDto(request.getRecipientInfo());
         Recipient recipient = recipientFactory.findOrCreate(recipientCreateDto);
 
 
@@ -68,5 +58,18 @@ public class OneTimeRemittanceService {
 
         // Command 실행 위임: 생성된 Command를 통해 실제 송금 로직 실행
         return remittanceProcessorService.execute(command);
+    }
+
+    private RecipientCreateDto createRecipientDto(OverseasRemittanceRequestDto.RecipientInfo recipientInfo) {
+        return new RecipientCreateDto(
+                recipientInfo.getName(),
+                recipientInfo.getAccountNumber(),
+                recipientInfo.getBankName(),
+                recipientInfo.getBankCode(),
+                recipientInfo.getPhoneCc(),
+                recipientInfo.getPhoneNo(),
+                recipientInfo.getCountry(),
+                recipientInfo.getReceiveCurrency()
+        );
     }
 }

@@ -16,7 +16,7 @@ public class RecipientFactory {
     // 수취인 정보를 받아, 기존에 동일한 정보의 수취인이 있으면 조회하고 없으면 새로 생성하여 반환
     @Transactional
     public Recipient findOrCreate(RecipientCreateDto dto) {
-        return recipientRepository.findByBankCodeAndAccountNoAndName(  //은행코드, 계좌번호, 이름
+        return recipientRepository.findByBankCodeAndAccountNoAndName(
                 dto.bankCode(),
                 dto.accountNumber(),
                 dto.name()
