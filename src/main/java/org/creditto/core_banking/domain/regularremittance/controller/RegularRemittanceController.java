@@ -33,17 +33,6 @@ public class RegularRemittanceController {
     // 내역 조회인데 여기 있어도 되는지 모르겠음
     @GetMapping("/schedule/{recurId}")
     public List<OverseasRemittanceResponseDto> getRemittanceRecordsByRecurId(@PathVariable("recurId") Long recurId, @RequestParam("userId") String userId) {
-        return regularRemittanceService.getRemittanceRecordsByRecurId(recurId, userId);
-    }
-
-    // 정기 해외 송금 설정 신규 등록
-    @PostMapping("/schedule")
-    public ResponseEntity<BaseResponse<?>> createScheduledRemittance(
-            @RequestParam("userId") String userId,
-            @RequestBody RegularRemittanceCreateReqDto dto
-    ) {
-        regularRemittanceService.createScheduledRemittance(userId, dto);
-        return ApiResponseUtil.success(SuccessCode.OK);
     }
 
     // 등록된 정기 해외 송금 설정 수정
@@ -51,20 +40,7 @@ public class RegularRemittanceController {
     public ResponseEntity<BaseResponse<?>> updateScheduledRemittance(
             @PathVariable("recurId") Long recurId,
             @RequestParam("userId") String userId,
-            @RequestBody RegularRemittanceUpdateReqDto dto
     ) {
         regularRemittanceService.updateScheduledRemittance(recurId, userId, dto);
-        return ApiResponseUtil.success(SuccessCode.OK);
     }
-
-    // 정기 해외 송금 설정 삭제
-    @DeleteMapping("/schedule/{recurId}")
-    public ResponseEntity<BaseResponse<?>> deleteScheduledRemittance(
-            @PathVariable("recurId") Long recurId,
-            @RequestParam("userId") String userId
-    ) {
-        regularRemittanceService.deleteScheduledRemittance(recurId, userId);
-        return ApiResponseUtil.success(SuccessCode.OK);
-    }
-
 }

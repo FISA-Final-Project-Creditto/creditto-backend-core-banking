@@ -42,14 +42,6 @@ public class RegularRemittanceService {
                 .collect(Collectors.toList());
     }
 
-    // 한 건의 정기 해외 송금 기록 상세 조회
-    public List<OverseasRemittanceResponseDto> getRemittanceRecordsByRecurId(Long recurId, String userId) {
-        RegularRemittance regularRemittance = regularRemittanceRepository.findById(recurId)
-                .orElseThrow(() -> new CustomBaseException(ErrorBaseCode.NOT_FOUND_REGULAR_REMITTANCE));
-        if (!Objects.equals(regularRemittance.getAccount().getExternalUserId(), userId)) {
-            throw new CustomBaseException(ErrorBaseCode.FORBIDDEN);
-        }
-
         List<OverseasRemittance> records = overseasRemittanceRepository.findAllByRecur_RegRemIdOrderByCreatedAtDesc(recurId);
         return records.stream()
                 .map(OverseasRemittanceResponseDto::from)
@@ -126,20 +118,5 @@ public class RegularRemittanceService {
             weekly.updateSchedule(dto.getScheduledDay());
         }
     }
-
-    // 정기 해외 송금 설정 삭제
-    @Transactional
-    public void deleteScheduledRemittance(Long recurId, String userId) {
-        RegularRemittance remittance = regularRemittanceRepository.findById(recurId)
-                .orElseThrow(() -> new CustomBaseException(ErrorBaseCode.NOT_FOUND_REGULAR_REMITTANCE));
-
-        if (!Objects.equals(remittance.getAccount().getExternalUserId(), userId)) {
-            throw new CustomBaseException(ErrorBaseCode.FORBIDDEN);
-        }
-
-        regularRemittanceRepository.delete(remittance);
-    }
-
-
 }
 

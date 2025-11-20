@@ -31,6 +31,10 @@ public class WeeklyRegularRemittance extends RegularRemittance{
         this.scheduledDay = scheduledDay;
     }
 
+    public void updateSchedule(ScheduledDay scheduledDay) {
+        this.scheduledDay = scheduledDay;
+    }
+
     public static WeeklyRegularRemittance of(
             Account account,
             Recipient recipient,
