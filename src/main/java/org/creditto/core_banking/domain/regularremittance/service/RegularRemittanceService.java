@@ -42,6 +42,8 @@ public class RegularRemittanceService {
                 .collect(Collectors.toList());
     }
 
+    // 한 건의 정기 해외 송금 기록 상세 조회
+    public List<OverseasRemittanceResponseDto> getRemittanceRecordsByRecurId(Long recurId) {
         List<OverseasRemittance> records = overseasRemittanceRepository.findAllByRecur_RegRemIdOrderByCreatedAtDesc(recurId);
         return records.stream()
                 .map(OverseasRemittanceResponseDto::from)
@@ -49,6 +51,7 @@ public class RegularRemittanceService {
     }
 
     // 정기 해외 송금 내역 신규 등록
+    // created_at 때문에 안되는 것 같은데....................
     @Transactional
     public RegularRemittanceResponseDto createScheduledRemittance(String userId, RegularRemittanceCreateReqDto dto) {
         Account account = accountRepository.findById(dto.getAccountId())
@@ -118,5 +121,20 @@ public class RegularRemittanceService {
             weekly.updateSchedule(dto.getScheduledDay());
         }
     }
+
+    // 정기 해외 송금 설정 삭제
+    @Transactional
+    public void deleteScheduledRemittance(Long recurId, String userId) {
+        RegularRemittance remittance = regularRemittanceRepository.findById(recurId)
+                .orElseThrow(() -> new CustomBaseException(ErrorBaseCode.NOT_FOUND_REGULAR_REMITTANCE));
+
+        if (!Objects.equals(remittance.getAccount().getExternalUserId(), userId)) {
+            throw new CustomBaseException(ErrorBaseCode.FORBIDDEN);
+        }
+
+        regularRemittanceRepository.delete(remittance);
+    }
+
+
 }
 
