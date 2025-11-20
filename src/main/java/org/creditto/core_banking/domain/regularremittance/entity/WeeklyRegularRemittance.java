@@ -27,6 +27,10 @@ public class WeeklyRegularRemittance extends RegularRemittance{
     @Enumerated(EnumType.STRING)
     private DayOfWeek scheduledDay;
 
+    public void updateSchedule(ScheduledDay scheduledDay) {
+        this.scheduledDay = scheduledDay;
+    }
+
     public static WeeklyRegularRemittance of(
             Account account,
             Recipient recipient,

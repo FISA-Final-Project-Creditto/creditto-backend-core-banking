@@ -27,14 +27,16 @@ public abstract class RegularRemittance {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long regRemId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     private Account account;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @OneToOne
     private Recipient recipient;
 
+    @Enumerated(EnumType.STRING)
     private CurrencyCode sendCurrency;
 
+    @Enumerated(EnumType.STRING)
     private CurrencyCode receivedCurrency;
 
     private BigDecimal sendAmount;
@@ -53,6 +55,22 @@ public abstract class RegularRemittance {
     private LocalDateTime updatedAt;
 
     public void updateRegRemStatus(RegRemStatus regRemStatus) {
+        this.regRemStatus = regRemStatus;
+    }
+
+    public void updateDetails(
+            Account account,
+            Recipient recipient,
+            CurrencyCode sendCurrency,
+            CurrencyCode receivedCurrency,
+            BigDecimal sendAmount,
+            RegRemStatus regRemStatus
+    ) {
+        this.account = account;
+        this.recipient = recipient;
+        this.sendCurrency = sendCurrency;
+        this.receivedCurrency = receivedCurrency;
+        this.sendAmount = sendAmount;
         this.regRemStatus = regRemStatus;
     }
 }
