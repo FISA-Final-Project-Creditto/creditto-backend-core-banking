@@ -13,13 +13,17 @@ spring:
     show-sql: true
     properties:
       hibernate:
-        format_sql: true
+        format_sql: false
         dialect: org.hibernate.dialect.MySQL8Dialect
+
+  config:
+    activate:
+      on-profile: dev
 
 scheduler:
   remittance:
-    monthly-cron: "0 0 1 * * *"
-    weekly-cron: "0 0 3 * * MON-FRI"
+    monthly-cron: "0 0 9 * * *"
+    weekly-cron: "0 0 10 * * MON-FRI"
 
 exchange:
   auth-key: ${EX_API_KEY}
@@ -36,3 +40,9 @@ management:
     web:
       exposure:
         include: health, info
+
+logging:
+  level:
+    root: info
+    org.hibernate: warn
+    org.springframework: info
