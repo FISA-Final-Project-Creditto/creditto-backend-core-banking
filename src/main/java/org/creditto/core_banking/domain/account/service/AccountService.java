@@ -77,7 +77,7 @@ public class AccountService {
     }
 
     public BigDecimal getAccountBalanceById(Long id) {
-        return accountRepository.findBalanceByAccountId(id)
+        return accountRepository.findBalanceById(id)
                 .orElseThrow(() -> new CustomBaseException(ErrorBaseCode.NOT_FOUND_ACCOUNT));
     }
 

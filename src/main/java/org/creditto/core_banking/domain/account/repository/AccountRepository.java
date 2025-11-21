@@ -17,5 +17,5 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
     // 클라이언트 ID로 계좌 조회
     List<Account> findAccountByExternalUserId(String externalUserId);
 
-    Optional<BigDecimal> findBalanceByAccountId(Long id);
+    Optional<BigDecimal> findBalanceById(Long id);
 }
