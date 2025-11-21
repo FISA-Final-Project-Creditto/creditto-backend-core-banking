@@ -51,7 +51,6 @@ public class RegularRemittanceService {
     }
 
     // 정기 해외 송금 내역 신규 등록
-    // created_at 때문에 안되는 것 같은데....................
     @Transactional
     public RegularRemittanceResponseDto createScheduledRemittance(String userId, RegularRemittanceCreateReqDto dto) {
         Account account = accountRepository.findById(dto.getAccountId())
