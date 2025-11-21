@@ -1,6 +1,7 @@
 package org.creditto.core_banking.domain.regularremittance.repository;
 
 import org.creditto.core_banking.domain.regularremittance.entity.RegRemStatus;
+import org.creditto.core_banking.domain.regularremittance.entity.ScheduledDay;
 import org.creditto.core_banking.domain.regularremittance.entity.WeeklyRegularRemittance;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

@@ -32,7 +32,8 @@ public abstract class RegularRemittance {
     @ManyToOne(fetch = FetchType.LAZY)
     private Account account;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "recipient_id")
     private Recipient recipient;
 
     private CurrencyCode sendCurrency;

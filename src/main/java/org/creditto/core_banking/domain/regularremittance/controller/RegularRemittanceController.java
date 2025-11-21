@@ -33,7 +33,7 @@ public class RegularRemittanceController {
     // 내역 조회인데 여기 있어도 되는지 모르겠음
     @GetMapping("/schedule/{recurId}")
     public List<OverseasRemittanceResponseDto> getRemittanceRecordsByRecurId(@PathVariable("recurId") Long recurId, @RequestParam("userId") String userId) {
-        return regularRemittanceService.getRemittanceRecordsByRecurId(recurId);
+        return regularRemittanceService.getRemittanceRecordsByRecurId(recurId, userId);
     }
 
     // 정기 해외 송금 설정 신규 등록

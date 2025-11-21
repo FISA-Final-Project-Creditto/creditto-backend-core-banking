@@ -43,7 +43,13 @@ public class RegularRemittanceService {
     }
 
     // 한 건의 정기 해외 송금 기록 상세 조회
-    public List<OverseasRemittanceResponseDto> getRemittanceRecordsByRecurId(Long recurId) {
+    public List<OverseasRemittanceResponseDto> getRemittanceRecordsByRecurId(Long recurId, String userId) {
+        RegularRemittance regularRemittance = regularRemittanceRepository.findById(recurId)
+                .orElseThrow(() -> new CustomBaseException(ErrorBaseCode.NOT_FOUND_REGULAR_REMITTANCE));
+        if (!Objects.equals(regularRemittance.getAccount().getExternalUserId(), userId)) {
+            throw new CustomBaseException(ErrorBaseCode.FORBIDDEN);
+        }
+
         List<OverseasRemittance> records = overseasRemittanceRepository.findAllByRecur_RegRemIdOrderByCreatedAtDesc(recurId);
         return records.stream()
                 .map(OverseasRemittanceResponseDto::from)
