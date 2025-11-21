@@ -29,4 +29,6 @@ public interface OverseasRemittanceRepository extends JpaRepository<OverseasRemi
             "LEFT JOIN FETCH r.recur " +
             "WHERE r.clientId = :clientId")
     List<OverseasRemittance> findByClientIdWithDetails(@Param("clientId") String clientId);
+
+    List<OverseasRemittance> findAllByRecur_RegRemIdOrderByCreatedAtDesc(Long regRemId);
 }

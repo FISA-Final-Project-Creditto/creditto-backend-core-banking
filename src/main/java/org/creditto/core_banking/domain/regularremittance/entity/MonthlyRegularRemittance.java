@@ -22,6 +22,10 @@ import java.math.BigDecimal;
 public class MonthlyRegularRemittance extends RegularRemittance{
     private Integer scheduledDate; // MONTHLY일 때만 사용 (1~31)
 
+    public void updateSchedule(Integer scheduledDate) {
+        this.scheduledDate = scheduledDate;
+    }
+
     public static MonthlyRegularRemittance of(
             Account account,
             Recipient recipient,

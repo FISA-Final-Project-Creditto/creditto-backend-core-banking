@@ -14,7 +14,6 @@ import org.creditto.core_banking.domain.recipient.entity.Recipient;
 import org.creditto.core_banking.global.common.CurrencyCode;
 
 import java.math.BigDecimal;
-import java.time.DayOfWeek;
 
 @Entity
 @Getter
@@ -25,7 +24,11 @@ import java.time.DayOfWeek;
 public class WeeklyRegularRemittance extends RegularRemittance{
 
     @Enumerated(EnumType.STRING)
-    private DayOfWeek scheduledDay;
+    private ScheduledDay scheduledDay;
+
+    public void updateSchedule(ScheduledDay scheduledDay) {
+        this.scheduledDay = scheduledDay;
+    }
 
     public static WeeklyRegularRemittance of(
             Account account,
@@ -33,7 +36,7 @@ public class WeeklyRegularRemittance extends RegularRemittance{
             CurrencyCode sendCurrency,
             CurrencyCode receivedCurrency,
             BigDecimal sendAmount,
-            DayOfWeek scheduledDay
+            ScheduledDay scheduledDay
     ) {
         return WeeklyRegularRemittance.builder()
                 .account(account)
