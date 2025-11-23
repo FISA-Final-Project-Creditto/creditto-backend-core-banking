@@ -79,7 +79,7 @@ jobs:
 
   CD:
     needs: CI
-    runs-on: ubuntu-22.04
+    runs-on: self-hosted
 
     steps:
       - name: .env 파일 전달
