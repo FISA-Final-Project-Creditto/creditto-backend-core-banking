@@ -14,7 +14,7 @@ import java.time.ZoneId;
  */
 public record ExecuteRemittanceCommand(
         // 고객 식별자
-        String clientId,
+        Long userId,
 
         // 수취인 엔티티의 식별자
         Long recipientId,
@@ -39,7 +39,7 @@ public record ExecuteRemittanceCommand(
 ) {
 
     public static ExecuteRemittanceCommand of(
-            String clientId,
+            Long userId,
             Long recipientId,
             Long accountId,
             Long regRemId,
@@ -49,7 +49,7 @@ public record ExecuteRemittanceCommand(
             LocalDate startDate
     ) {
         return new ExecuteRemittanceCommand(
-                clientId,
+                userId,
                 recipientId,
                 accountId,
                 regRemId,
@@ -62,7 +62,7 @@ public record ExecuteRemittanceCommand(
 
     public static ExecuteRemittanceCommand of(RegularRemittance regularRemittance) {
         return new ExecuteRemittanceCommand(
-                regularRemittance.getAccount().getExternalUserId(),
+                regularRemittance.getAccount().getUserId(),
                 regularRemittance.getRecipient().getRecipientId(),
                 regularRemittance.getAccount().getId(),
                 regularRemittance.getRegRemId(),

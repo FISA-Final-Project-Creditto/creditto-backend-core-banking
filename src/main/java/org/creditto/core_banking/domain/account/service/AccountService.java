@@ -34,7 +34,7 @@ public class AccountService {
      * @return 생성된 계좌 정보를 담은 AccountRes DTO
      */
     @Transactional
-    public AccountRes createAccount(AccountCreateReq request, String externalUserId) {
+    public AccountRes createAccount(AccountCreateReq request, Long userId) {
         // accountNo는 Account 엔티티의 @PrePersist 메서드에서 생성
         Account account = Account.of(
                 null, // accountNo는 @PrePersist에서 설정되므로 null로 전달
@@ -42,7 +42,7 @@ public class AccountService {
                 BigDecimal.ZERO,
                 request.accountType(),
                 AccountState.ACTIVE,
-                externalUserId
+                userId
         );
 
         Account savedAccount = accountRepository.save(account);
@@ -88,8 +88,8 @@ public class AccountService {
         return AccountRes.from(account);
     }
 
-    public List<AccountRes> getAccountByExternalId(String externalUserId) {
-        List<Account> accounts = accountRepository.findAccountByExternalUserId(externalUserId);
+    public List<AccountRes> getAccountByUserId(Long userId) {
+        List<Account> accounts = accountRepository.findAccountByUserId(userId);
 
         return accounts.stream()
                 .map(AccountRes::from)

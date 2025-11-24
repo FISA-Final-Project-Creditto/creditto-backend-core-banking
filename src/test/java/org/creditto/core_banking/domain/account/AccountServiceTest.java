@@ -53,7 +53,7 @@ class AccountServiceTest {
                 AccountType.DEPOSIT
         );
 
-        String externalUserId = "externalUserId";
+        Long userId = 1L;
 
         // accountNo는 @PrePersist를 통해 엔티티 내부에서 생성되므로,
         // 테스트에서는 accountRepository.save()가 반환할 Account 객체를 미리 정의하여 모킹합니다.
@@ -64,13 +64,13 @@ class AccountServiceTest {
                 BigDecimal.ZERO,
                 request.accountType(),
                 AccountState.ACTIVE,
-                externalUserId
+                userId
         );
         // ID는 save 시점에 부여된다고 가정
         given(accountRepository.save(any(Account.class))).willReturn(mockSavedAccount);
 
         // When
-        AccountRes result = accountService.createAccount(request, externalUserId);
+        AccountRes result = accountService.createAccount(request, userId);
 
         // Then
         assertThat(result).isNotNull();
@@ -78,7 +78,7 @@ class AccountServiceTest {
         assertThat(result.accountName()).isEqualTo(request.accountName());
         assertThat(result.accountType()).isEqualTo(request.accountType());
         assertThat(result.accountState()).isEqualTo(AccountState.ACTIVE);
-        assertThat(result.externalUserId()).isEqualTo(externalUserId);
+        assertThat(result.userId()).isEqualTo(userId);
 
     }
 
@@ -97,7 +97,7 @@ class AccountServiceTest {
                 BigDecimal.valueOf(50000),
                 AccountType.DEPOSIT,
                 AccountState.ACTIVE,
-                "CLIENT001"
+                1L
         );
 
         // 1. accountRepository.findById가 호출되면 mockAccount를 반환
@@ -123,14 +123,14 @@ class AccountServiceTest {
         // given
         Long accountId = 1L;
         String accountNo = "ACC001";
-        String clientId = "CLIENT001";
+        Long userId = 1L;
         Account mockAccount = Account.of(
                 accountNo,
                 "테스트 계좌",
                 BigDecimal.valueOf(100000),
                 AccountType.DEPOSIT,
                 AccountState.ACTIVE,
-                clientId
+                userId
         );
 
         given(accountRepository.findById(accountId))
@@ -160,10 +160,10 @@ class AccountServiceTest {
 
 
     @Test
-    @DisplayName("클라이언트 ID로 계좌 조회 성공")
-    void getAccountByExternalUserId_Success() {
+    @DisplayName("사용자 ID로 계좌 조회 성공")
+    void getAccountByUserId_Success() {
         // given
-        String clientId = "CLIENT001";
+        Long userId = 1L;
         
         Account account1 = Account.of(
                 "ACC001",
@@ -171,7 +171,7 @@ class AccountServiceTest {
                 BigDecimal.valueOf(100000),
                 AccountType.DEPOSIT,
                 AccountState.ACTIVE,
-                clientId
+                userId
         );
 
         Account account2 = Account.of(
@@ -180,15 +180,15 @@ class AccountServiceTest {
                 BigDecimal.valueOf(50000),
                 AccountType.SAVINGS,
                 AccountState.ACTIVE,
-                clientId
+                userId
         );
 
-        
-        given(accountRepository.findAccountByExternalUserId(clientId))
+
+        given(accountRepository.findAccountByUserId(userId))
                 .willReturn(List.of(account1, account2));
         
         // when
-        List<AccountRes> result = accountService.getAccountByExternalId(clientId);
+        List<AccountRes> result = accountService.getAccountByUserId(userId);
 
         // then
         assertThat(result.size()).isEqualTo(2);

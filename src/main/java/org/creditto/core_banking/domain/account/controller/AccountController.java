@@ -25,10 +25,10 @@ public class AccountController {
 
     private final AccountService accountService;
 
-    @PostMapping("/{externalUserId}")
+    @PostMapping("/{userId}")
     public ResponseEntity<BaseResponse<AccountRes>> createAccount(@RequestBody AccountCreateReq request,
-                                                                  @PathVariable String externalUserId) {
-        return ApiResponseUtil.success(SuccessCode.CREATED, accountService.createAccount(request, externalUserId));
+                                                                  @PathVariable Long userId) {
+        return ApiResponseUtil.success(SuccessCode.CREATED, accountService.createAccount(request, userId));
     }
 
     @GetMapping("/{accountId}/account")
@@ -46,8 +46,8 @@ public class AccountController {
         return ApiResponseUtil.success(SuccessCode.OK, accountService.getAccountByAccountNo(accountNo));
     }
 
-    @GetMapping("client/{externalUserId}")
-    public ResponseEntity<BaseResponse<List<AccountRes>>> getAccountByClientId(@PathVariable String externalUserId) {
-        return ApiResponseUtil.success(SuccessCode.OK, accountService.getAccountByExternalId(externalUserId));
+    @GetMapping("client/{userId}")
+    public ResponseEntity<BaseResponse<List<AccountRes>>> getAccountByClientId(@PathVariable Long userId) {
+        return ApiResponseUtil.success(SuccessCode.OK, accountService.getAccountByUserId(userId));
     }
 }

@@ -37,16 +37,16 @@ public class Account extends BaseEntity {
     private AccountState accountState;
 
     @Column(updatable = false)
-    private String externalUserId;
+    private Long userId;
 
-    public static Account of(String accountNo, String accountName, BigDecimal balance, AccountType accountType, AccountState accountState, String externalUserId) {
+    public static Account of(String accountNo, String accountName, BigDecimal balance, AccountType accountType, AccountState accountState, Long userId) {
         return Account.builder()
                 .accountNo(accountNo)
                 .accountName(accountName)
                 .balance(balance)
                 .accountType(accountType)
                 .accountState(accountState)
-                .externalUserId(externalUserId)
+                .userId(userId)
                 .build();
     }
 

@@ -34,7 +34,7 @@ public class OneTimeRemittanceService {
      * @return 송금 처리 결과
      */
     @Transactional
-    public OverseasRemittanceResponseDto processRemittance(String userId, OverseasRemittanceRequestDto request) {
+    public OverseasRemittanceResponseDto processRemittance(Long userId, OverseasRemittanceRequestDto request) {
         // 출금 계좌 조회 및 ID 확보
         Account account = accountRepository.findByAccountNo(request.getAccountNumber())
                 .orElseThrow(() -> new CustomBaseException(ErrorBaseCode.NOT_FOUND_ACCOUNT));

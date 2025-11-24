@@ -44,7 +44,7 @@ class TransactionServiceTest {
                 BigDecimal.ZERO,
                 AccountType.SAVINGS,
                 AccountState.ACTIVE,
-                "CLIENT001"
+                1L
         );
 
         BigDecimal amount = new BigDecimal("50000");

@@ -17,7 +17,7 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
     Optional<Account> findByAccountNo(String accountNo);
 
     // 클라이언트 ID로 계좌 조회
-    List<Account> findAccountByExternalUserId(String externalUserId);
+    List<Account> findAccountByUserId(Long userId);
 
     @Query("SELECT a.balance FROM Account a WHERE a.id = :id")
     Optional<BigDecimal> findBalanceById(@Param("id") Long id);

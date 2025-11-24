@@ -12,7 +12,7 @@ public record AccountRes(
     BigDecimal balance,
     AccountType accountType,
     AccountState accountState,
-    String externalUserId
+    Long userId
 ) {
     public static AccountRes from(Account account) {
         return new AccountRes(
@@ -21,7 +21,7 @@ public record AccountRes(
                 account.getBalance(),
                 account.getAccountType(),
                 account.getAccountState(),
-                account.getExternalUserId()
+                account.getUserId()
         );
     }
 }
