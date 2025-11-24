@@ -22,7 +22,7 @@ public class RemittanceFeeController {
 
     // 테스트를 위한 API
     @PostMapping("/calculate")
-    public ResponseEntity<BaseResponse<?>> calculateRemittanceFee(@RequestBody RemittanceFeeReq dto) {
+    public ResponseEntity<BaseResponse<FeeRecord>> calculateRemittanceFee(@RequestBody RemittanceFeeReq dto) {
         FeeRecord feeRecord = remittanceFeeService.calculateAndSaveFee(dto);
         return ApiResponseUtil.success(SuccessCode.OK, feeRecord);
     }

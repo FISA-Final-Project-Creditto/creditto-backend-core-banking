@@ -6,6 +6,7 @@ import org.creditto.core_banking.domain.overseasremittance.dto.OverseasRemittanc
 import org.creditto.core_banking.domain.overseasremittance.dto.OverseasRemittanceResponseDto;
 import org.creditto.core_banking.domain.overseasremittance.service.OneTimeRemittanceService;
 import org.creditto.core_banking.global.response.ApiResponseUtil;
+import org.creditto.core_banking.global.response.BaseResponse;
 import org.creditto.core_banking.global.response.SuccessCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -31,7 +32,7 @@ public class OneTimeRemittanceController {
      * @return 처리 결과를 담은 응답 DTO ({@link OverseasRemittanceResponseDto})
      */
     @PostMapping("/{externalUserId}")
-    public ResponseEntity<?> processRemittance(
+    public ResponseEntity<BaseResponse<OverseasRemittanceResponseDto>> processRemittance(
             @PathVariable String externalUserId,
             @Valid @RequestBody OverseasRemittanceRequestDto request
     ) {

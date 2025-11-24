@@ -15,6 +15,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.math.BigDecimal;
+import java.util.List;
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/core/account")
@@ -23,28 +26,28 @@ public class AccountController {
     private final AccountService accountService;
 
     @PostMapping("/{externalUserId}")
-    public ResponseEntity<BaseResponse<?>> createAccount(@RequestBody AccountCreateReq request,
-                                                         @PathVariable String externalUserId) {
+    public ResponseEntity<BaseResponse<AccountRes>> createAccount(@RequestBody AccountCreateReq request,
+                                                                  @PathVariable String externalUserId) {
         return ApiResponseUtil.success(SuccessCode.CREATED, accountService.createAccount(request, externalUserId));
     }
 
     @GetMapping("/{accountId}/account")
-    public ResponseEntity<BaseResponse<?>> getAccountByAccountId(@PathVariable Long accountId) {
+    public ResponseEntity<BaseResponse<AccountRes>> getAccountByAccountId(@PathVariable Long accountId) {
         return ApiResponseUtil.success(SuccessCode.OK, accountService.getAccountById(accountId));
     }
 
     @GetMapping("/{accountId}/balance")
-    public ResponseEntity<BaseResponse<?>> getAccountBalanceByAccountId(@PathVariable Long accountId) {
+    public ResponseEntity<BaseResponse<BigDecimal>> getAccountBalanceByAccountId(@PathVariable Long accountId) {
         return ApiResponseUtil.success(SuccessCode.OK, accountService.getAccountBalanceById(accountId));
     }
 
     @GetMapping("/{accountNo}")
-    public ResponseEntity<BaseResponse<?>> getAccountByAccountNo(@PathVariable String accountNo) {
+    public ResponseEntity<BaseResponse<AccountRes>> getAccountByAccountNo(@PathVariable String accountNo) {
         return ApiResponseUtil.success(SuccessCode.OK, accountService.getAccountByAccountNo(accountNo));
     }
 
     @GetMapping("client/{externalUserId}")
-    public ResponseEntity<BaseResponse<?>> getAccountByClientId(@PathVariable String externalUserId) {
+    public ResponseEntity<BaseResponse<List<AccountRes>>> getAccountByClientId(@PathVariable String externalUserId) {
         return ApiResponseUtil.success(SuccessCode.OK, accountService.getAccountByExternalId(externalUserId));
     }
 }

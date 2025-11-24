@@ -8,7 +8,6 @@ import org.creditto.core_banking.domain.transaction.entity.TxnType;
 import org.creditto.core_banking.domain.transaction.service.TransactionService;
 import org.creditto.core_banking.global.response.error.ErrorBaseCode;
 import org.creditto.core_banking.global.response.exception.CustomBaseException;
-import org.creditto.core_banking.global.response.exception.CustomException;
 import org.springframework.transaction.annotation.Transactional;
 
 @RequiredArgsConstructor

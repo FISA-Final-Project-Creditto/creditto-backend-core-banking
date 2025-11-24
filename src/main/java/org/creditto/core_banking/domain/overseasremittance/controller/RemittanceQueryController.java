@@ -33,7 +33,7 @@ public class RemittanceQueryController {
      * @return 해당 고객의 송금 내역 리스트 ({@link OverseasRemittanceResponseDto})
      */
     @GetMapping
-    public ResponseEntity<?> getRemittanceList(@RequestParam String clientId) {
+    public ResponseEntity<BaseResponse<List<OverseasRemittanceResponseDto>>> getRemittanceList(@RequestParam String clientId) {
         return ApiResponseUtil.success(SuccessCode.OK, remittanceService.getRemittanceList(clientId));
     }
 }
