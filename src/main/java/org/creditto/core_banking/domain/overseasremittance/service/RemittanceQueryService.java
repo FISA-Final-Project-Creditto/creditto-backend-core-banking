@@ -22,11 +22,11 @@ public class RemittanceQueryService {
     /**
      * 특정 고객의 모든 해외송금 내역을 조회합니다.
      *
-     * @param clientId 조회할 고객의 ID
+     * @param userId 조회할 고객의 ID
      * @return 고객의 송금 내역 DTO 리스트
      */
-    public List<OverseasRemittanceResponseDto> getRemittanceList(String clientId) {
-        return remittanceRepository.findByClientIdWithDetails(clientId)
+    public List<OverseasRemittanceResponseDto> getRemittanceList(Long userId) {
+        return remittanceRepository.findByUserIdWithDetails(userId)
                 .stream()
                 .map(OverseasRemittanceResponseDto::from)
                 .toList();

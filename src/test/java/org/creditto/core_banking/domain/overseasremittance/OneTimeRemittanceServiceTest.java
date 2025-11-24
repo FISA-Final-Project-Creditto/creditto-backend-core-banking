@@ -46,7 +46,7 @@ class OneTimeRemittanceServiceTest {
     private OneTimeRemittanceService oneTimeRemittanceService;
 
     // 공통 목 객체 (실제 객체는 아니지만 테스트에 필요한 데이터 제공)
-    private String clientId;
+    private Long userId;
     private Account mockAccount;
     private Recipient mockRecipient;
     private OverseasRemittanceRequestDto baseRequest;
@@ -55,8 +55,8 @@ class OneTimeRemittanceServiceTest {
 
     @BeforeEach
     void setUp() {
-        clientId = "testClient";
-        mockAccount = Account.of("1002-123-456789", "예금계좌", BigDecimal.valueOf(600_000), DEPOSIT , ACTIVE, clientId);
+        userId = 1L;
+        mockAccount = Account.of("1002-123-456789", "예금계좌", BigDecimal.valueOf(600_000), DEPOSIT , ACTIVE, userId);
 
         mockRecipientInfo = OverseasRemittanceRequestDto.RecipientInfo.builder()
                 .name("John Doe")
@@ -112,7 +112,7 @@ class OneTimeRemittanceServiceTest {
         given(remittanceProcessorService.execute(any(ExecuteRemittanceCommand.class))).willReturn(mockResponse);
 
         // when
-        OverseasRemittanceResponseDto result = oneTimeRemittanceService.processRemittance(clientId, baseRequest);
+        OverseasRemittanceResponseDto result = oneTimeRemittanceService.processRemittance(userId, baseRequest);
 
         // then
         assertThat(result).isNotNull();
@@ -137,7 +137,7 @@ class OneTimeRemittanceServiceTest {
 
         // when & then
         // OneTimeRemittanceService가 해당 예외를 그대로 던지는지 검증
-        assertThatThrownBy(() -> oneTimeRemittanceService.processRemittance(clientId, baseRequest))
+        assertThatThrownBy(() -> oneTimeRemittanceService.processRemittance(userId, baseRequest))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessage(errorMessage);
 

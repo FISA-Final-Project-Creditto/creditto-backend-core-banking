@@ -29,11 +29,11 @@ public class RemittanceQueryController {
     /**
      * 특정 고객(Client)의 모든 송금 내역을 조회합니다.
      *
-     * @param clientId 송금 내역을 조회할 고객의 ID
+     * @param userId 송금 내역을 조회할 고객의 ID
      * @return 해당 고객의 송금 내역 리스트 ({@link OverseasRemittanceResponseDto})
      */
     @GetMapping
-    public ResponseEntity<BaseResponse<List<OverseasRemittanceResponseDto>>> getRemittanceList(@RequestParam String clientId) {
-        return ApiResponseUtil.success(SuccessCode.OK, remittanceService.getRemittanceList(clientId));
+    public ResponseEntity<BaseResponse<List<OverseasRemittanceResponseDto>>> getRemittanceList(@RequestParam Long userId) {
+        return ApiResponseUtil.success(SuccessCode.OK, remittanceService.getRemittanceList(userId));
     }
 }

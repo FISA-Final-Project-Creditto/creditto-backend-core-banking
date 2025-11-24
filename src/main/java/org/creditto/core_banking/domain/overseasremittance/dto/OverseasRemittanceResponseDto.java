@@ -24,7 +24,7 @@ public class OverseasRemittanceResponseDto {
     /**
      * 고객 ID
      */
-    private String clientId;
+    private Long userId;
 
     /**
      * 수취인 ID
@@ -105,7 +105,7 @@ public class OverseasRemittanceResponseDto {
     public static OverseasRemittanceResponseDto from(OverseasRemittance overseasRemittance) {
         return OverseasRemittanceResponseDto.builder()
                 .remittanceId(overseasRemittance.getRemittanceId())
-                .clientId(overseasRemittance.getClientId())
+                .userId(overseasRemittance.getUserId())
                 .recipientId(overseasRemittance.getRecipient().getRecipientId())
                 .recipientName(overseasRemittance.getRecipient().getName())
                 .accountId(overseasRemittance.getAccount().getId())

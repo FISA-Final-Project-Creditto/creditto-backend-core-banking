@@ -31,12 +31,12 @@ public class OneTimeRemittanceController {
      * @param request 송금에 필요한 정보(고객 ID, 수취인 정보, 금액 등)를 담은 DTO
      * @return 처리 결과를 담은 응답 DTO ({@link OverseasRemittanceResponseDto})
      */
-    @PostMapping("/{externalUserId}")
+    @PostMapping("/{userId}")
     public ResponseEntity<BaseResponse<OverseasRemittanceResponseDto>> processRemittance(
-            @PathVariable String externalUserId,
+            @PathVariable Long userId,
             @Valid @RequestBody OverseasRemittanceRequestDto request
     ) {
-        return ApiResponseUtil.success(SuccessCode.OK, oneTimeRemittanceService.processRemittance(externalUserId, request));
+        return ApiResponseUtil.success(SuccessCode.OK, oneTimeRemittanceService.processRemittance(userId, request));
     }
 
 }
