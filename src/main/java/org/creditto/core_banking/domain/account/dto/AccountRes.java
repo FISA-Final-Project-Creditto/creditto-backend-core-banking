@@ -7,6 +7,7 @@ import org.creditto.core_banking.domain.account.entity.AccountType;
 import java.math.BigDecimal;
 
 public record AccountRes(
+    Long accountId,
     String accountNo,
     String accountName,
     BigDecimal balance,
@@ -16,6 +17,7 @@ public record AccountRes(
 ) {
     public static AccountRes from(Account account) {
         return new AccountRes(
+                account.getId(),
                 account.getAccountNo(),
                 account.getAccountName(),
                 account.getBalance(),
