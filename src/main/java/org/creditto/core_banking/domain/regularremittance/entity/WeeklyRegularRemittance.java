@@ -25,7 +25,7 @@ import java.time.DayOfWeek;
 public class WeeklyRegularRemittance extends RegularRemittance{
 
     @Enumerated(EnumType.STRING)
-    private DayOfWeek scheduledDay;
+    private ScheduledDay scheduledDay;
 
     public void updateSchedule(ScheduledDay scheduledDay) {
         this.scheduledDay = scheduledDay;
@@ -37,7 +37,7 @@ public class WeeklyRegularRemittance extends RegularRemittance{
             CurrencyCode sendCurrency,
             CurrencyCode receivedCurrency,
             BigDecimal sendAmount,
-            DayOfWeek scheduledDay
+            ScheduledDay scheduledDay
     ) {
         return WeeklyRegularRemittance.builder()
                 .account(account)

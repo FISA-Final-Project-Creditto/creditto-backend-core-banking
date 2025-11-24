@@ -11,26 +11,29 @@ import java.math.BigDecimal;
 @Builder
 public class RegularRemittanceResponseDto {
     private Long regRemId;
-    private Long accountId;
-    private Long recipientId;
+
+    private String recipientName;
+    private String recipientBankName;
+
     private CurrencyCode sendCurrency;
-    private CurrencyCode receivedCurrency;
     private BigDecimal sendAmount;
+    private CurrencyCode receivedCurrency;
     private RegRemStatus regRemStatus;
 
     private String regRemType;            // 매월/매주
-
     private Integer scheduledDate;        // 매월 송금
     private ScheduledDay scheduledDay;    // 매주 송금
 
     public static RegularRemittanceResponseDto from(RegularRemittance regularRemittance) {
         RegularRemittanceResponseDto.RegularRemittanceResponseDtoBuilder builder = RegularRemittanceResponseDto.builder()
                 .regRemId(regularRemittance.getRegRemId())
-                .accountId(regularRemittance.getAccount().getId())
-                .recipientId(regularRemittance.getRecipient().getRecipientId())
+                .recipientName(regularRemittance.getRecipient().getName())
+                .recipientBankName(regularRemittance.getRecipient().getBankName())
+//                .accountId(regularRemittance.getAccount().getId())
+//                .recipientId(regularRemittance.getRecipient().getRecipientId())
                 .sendCurrency(regularRemittance.getSendCurrency())
-                .receivedCurrency(regularRemittance.getReceivedCurrency())
                 .sendAmount(regularRemittance.getSendAmount())
+                .receivedCurrency(regularRemittance.getReceivedCurrency())
                 .regRemStatus(regularRemittance.getRegRemStatus());
 
         if (regularRemittance instanceof MonthlyRegularRemittance) {

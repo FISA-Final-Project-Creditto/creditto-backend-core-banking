@@ -18,7 +18,7 @@ public interface OverseasRemittanceRepository extends JpaRepository<OverseasRemi
      * 특정 고객(Client)의 모든 송금 내역을 연관된 엔티티(수취인, 계좌, 환전, 수수료, 정기송금)와 함께 조회합니다.
      * Fetch Join을 사용하여 N+1 쿼리 문제를 방지합니다.
      *
-     * @param userId 조회할 고객의 ID
+     * @param clientId 조회할 고객의 ID
      * @return 조회된 송금 내역 리스트 ({@link OverseasRemittance})
      */
     @Query("SELECT r FROM OverseasRemittance r " +
@@ -27,6 +27,26 @@ public interface OverseasRemittanceRepository extends JpaRepository<OverseasRemi
             "JOIN FETCH r.exchange " +
             "JOIN FETCH r.feeRecord " +
             "LEFT JOIN FETCH r.recur " +
-            "WHERE r.userId = :userId")
+            "WHERE r.clientId = :clientId")
+    List<OverseasRemittance> findByClientIdWithDetails(@Param("clientId") Long clientId);
+
+    /**
+     * 특정 정기송금(Regular Remittance)에 해당하는 모든 송금 내역을 최신순으로 조회합니다.
+     * Fetch Join을 사용하여 N+1 쿼리 문제를 방지합니다.
+     *
+     * @param regRemId 조회할 정기송금의 ID
+     * @return 조회된 송금 내역 리스트 ({@link OverseasRemittance})
+     */
+    @Query("SELECT r FROM OverseasRemittance r " +
+            "JOIN FETCH r.recipient " +
+            "JOIN FETCH r.account " +
+            "JOIN FETCH r.exchange " +
+            "JOIN FETCH r.feeRecord " +
+            "WHERE r.recur.regRemId = :regRemId " +
+            "ORDER BY r.createdAt DESC")
+    List<OverseasRemittance> findByRecur_RegRemIdOrderByCreatedAtDesc(@Param("regRemId") Long regRemId);
+
+    List<OverseasRemittance> findAllByRecur_RegRemIdOrderByCreatedAtDesc(Long regRemId);
+
     List<OverseasRemittance> findByUserIdWithDetails(@Param("userId") Long userId);
 }

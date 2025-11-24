@@ -11,6 +11,7 @@ import java.math.BigDecimal;
 @Getter
 @NoArgsConstructor
 public class RegularRemittanceUpdateReqDto {
+
     private Long accountId;
     private Long recipientId;
     private CurrencyCode sendCurrency; // String -> CurrencyCode
