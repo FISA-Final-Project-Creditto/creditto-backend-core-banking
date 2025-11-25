@@ -40,10 +40,10 @@ public class RemittanceQueryController {
     }
 
     /**
-     * 특정 송금 건에 대한 신용도 분석용 데이터를 조회합니다.
+     * 특정 고객의 모든 송금 내역에 대한 신용도 분석용 데이터를 조회합니다.
      *
      * @param userId 조회할 고객의 ID
-     * @return 해당 송금의 신용 분석 데이터 ({@link CreditAnalysisRes})
+     * @return 해당 고객의 모든 송금에 대한 신용 분석용 데이터 리스트 ({@link CreditAnalysisRes})
      */
     @GetMapping("/credit-analysis/{userId}")
     public ResponseEntity<BaseResponse<List<CreditAnalysisRes>>> getCreditAnalysisData(@PathVariable Long userId) {

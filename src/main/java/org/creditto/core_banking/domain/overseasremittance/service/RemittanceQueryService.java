@@ -35,7 +35,7 @@ public class RemittanceQueryService {
     }
 
     /**
-     * 특정 해외송금 내역을 신용도 분석용 DTO로 조회합니다.
+     * 특정 고객의 해외송금 내역 일부를 신용도 분석용 DTO로 조회합니다.
      *
      * @param userId 조회할 송금의 ID
      * @return 신용도 분석용 데이터 DTO
