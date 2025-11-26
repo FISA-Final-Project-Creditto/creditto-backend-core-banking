@@ -24,7 +24,6 @@ import java.time.DayOfWeek;
 @AllArgsConstructor(access = AccessLevel.PROTECTED)
 public class WeeklyRegularRemittance extends RegularRemittance{
 
-    @Enumerated(EnumType.STRING)
     private DayOfWeek scheduledDay;
 
     public static WeeklyRegularRemittance of(
