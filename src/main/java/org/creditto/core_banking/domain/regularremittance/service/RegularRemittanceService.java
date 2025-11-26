@@ -74,7 +74,6 @@ public class RegularRemittanceService {
      * @return 해당 송금의 상세 정보 ({@link RemittanceDetailDto})
      */
     public RemittanceDetailDto getRegularRemittanceDetail(Long userId, Long remittanceId, Long regRemId) {
-//        OverseasRemittance overseasRemittance = overseasRemittanceRepository.findById(remittanceId)
         OverseasRemittance overseasRemittance = overseasRemittanceRepository.findByIdAndRecur_RegRemId(remittanceId, regRemId)
                 .orElseThrow(() -> new CustomBaseException(ErrorBaseCode.NOT_FOUND_ENTITY));
         verifyUserOwnership(overseasRemittance.getUserId(), userId);

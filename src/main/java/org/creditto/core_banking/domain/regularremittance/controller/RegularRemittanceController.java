@@ -1,10 +1,7 @@
 package org.creditto.core_banking.domain.regularremittance.controller;
 
 import org.creditto.core_banking.domain.regularremittance.dto.*;
-import org.creditto.core_banking.domain.overseasremittance.dto.OverseasRemittanceResponseDto;
-import org.creditto.core_banking.domain.regularremittance.dto.RegularRemittanceCreateReqDto;
 import org.creditto.core_banking.domain.regularremittance.dto.RegularRemittanceResponseDto;
-import org.creditto.core_banking.domain.regularremittance.dto.RegularRemittanceUpdateReqDto;
 import org.creditto.core_banking.domain.regularremittance.service.RegularRemittanceService;
 import org.creditto.core_banking.global.response.ApiResponseUtil;
 import org.creditto.core_banking.global.response.BaseResponse;
@@ -31,8 +28,8 @@ public class RegularRemittanceController {
      * @return 해당 사용자의 모든 정기송금 설정 목록 ({@link RegularRemittanceResponseDto})
      */
     @GetMapping
-    public List<RegularRemittanceResponseDto> getScheduledRemittancesByUserId(@RequestParam("userId") Long userId) {
-        return regularRemittanceService.getScheduledRemittancesByUserId(userId);
+    public ResponseEntity<BaseResponse<List<RegularRemittanceResponseDto>>> getScheduledRemittancesByUserId(@RequestParam("userId") Long userId) {
+        return ApiResponseUtil.success(SuccessCode.OK, regularRemittanceService.getScheduledRemittancesByUserId(userId));
     }
 
     /**
@@ -43,8 +40,8 @@ public class RegularRemittanceController {
      * @return 해당 정기송금 설정에 대한 모든 송금 기록 목록 ({@link RemittanceHistoryDto})
      */
     @GetMapping("/{regRemId}")
-    public List<RemittanceHistoryDto> getRemittanceRecordsByRecurId(@PathVariable("regRemId") Long regRemId, @RequestParam("userId") Long userId) {
-        return regularRemittanceService.getRegularRemittanceHistoryByRegRemId(userId, regRemId);
+    public ResponseEntity<BaseResponse<List<RemittanceHistoryDto>>> getRemittanceRecordsByRecurId(@PathVariable("regRemId") Long regRemId, @RequestParam("userId") Long userId) {
+        return ApiResponseUtil.success(SuccessCode.OK, regularRemittanceService.getRegularRemittanceHistoryByRegRemId(userId, regRemId));
     }
 
     /**

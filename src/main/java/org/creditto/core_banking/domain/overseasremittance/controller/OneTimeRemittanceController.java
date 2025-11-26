@@ -41,18 +41,4 @@ public class OneTimeRemittanceController {
         return ApiResponseUtil.success(SuccessCode.OK, oneTimeRemittanceService.processRemittance(userId, request));
     }
 
-//    /*
-//     * 일회성 해외송금 내역을 조회합니다.
-//     *
-//     * @param userId 사용자 ID
-//     * @return 일회성 송금 기록 목록 ({@link OverseasRemittanceResponseDto})
-//     */
-//    @GetMapping
-//    public ResponseEntity<BaseResponse<List<OverseasRemittanceResponseDto>>> getOneTimeRemittanceList(
-//            @RequestParam("userId") Long userId
-//    ) {
-//        return ApiResponseUtil.success(SuccessCode.OK, oneTimeRemittanceService.getOneTimeRemittanceList(userId));
-//    }
-
-
 }

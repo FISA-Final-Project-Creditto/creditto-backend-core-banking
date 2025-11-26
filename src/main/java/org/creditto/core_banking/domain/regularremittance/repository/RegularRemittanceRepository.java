@@ -1,9 +1,9 @@
 package org.creditto.core_banking.domain.regularremittance.repository;
 
-import feign.Param;
 import org.creditto.core_banking.domain.regularremittance.entity.RegularRemittance;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -15,6 +15,6 @@ public interface RegularRemittanceRepository extends JpaRepository<RegularRemitt
             "FROM RegularRemittance rr " +
             "JOIN FETCH rr.account a " +
             "JOIN FETCH rr.recipient " +
-            "WHERE a.accountNo IN (SELECT acc.accountNo FROM Account acc WHERE acc.userId = :userId)")
+            "WHERE a.userId = :userId")
     List<RegularRemittance> findByAccountUserId(@Param("userId") Long userId);
 }
