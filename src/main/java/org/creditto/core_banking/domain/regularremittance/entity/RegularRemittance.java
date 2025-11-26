@@ -11,6 +11,7 @@ import org.creditto.core_banking.domain.recipient.entity.Recipient;
 import org.creditto.core_banking.global.common.CurrencyCode;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -22,6 +23,7 @@ import java.time.LocalDateTime;
 @DiscriminatorColumn(name = "regrem_type")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PROTECTED)
+@EntityListeners(AuditingEntityListener.class)
 public abstract class RegularRemittance {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -33,8 +35,10 @@ public abstract class RegularRemittance {
     @OneToOne(fetch = FetchType.LAZY)
     private Recipient recipient;
 
+    @Enumerated(EnumType.STRING)
     private CurrencyCode sendCurrency;
 
+    @Enumerated(EnumType.STRING)
     private CurrencyCode receivedCurrency;
 
     private BigDecimal sendAmount;
@@ -53,6 +57,16 @@ public abstract class RegularRemittance {
     private LocalDateTime updatedAt;
 
     public void updateRegRemStatus(RegRemStatus regRemStatus) {
+        this.regRemStatus = regRemStatus;
+    }
+
+    public void updateDetails(
+            Account account,
+            BigDecimal sendAmount,
+            RegRemStatus regRemStatus
+    ) {
+        this.account = account;
+        this.sendAmount = sendAmount;
         this.regRemStatus = regRemStatus;
     }
 }
