@@ -66,6 +66,8 @@ class RegularRemittanceSchedulerTest {
 
     @BeforeEach
     void setUp() {
+        Long userId = 1L;
+        account = Account.of("1002-123-456789", "예금계좌", BigDecimal.valueOf(1_000_000), DEPOSIT, ACTIVE, userId);
 
         recipient = createRecipient();
     }
