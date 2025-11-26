@@ -175,8 +175,8 @@ public class RegularRemittanceService {
 
     // 정기 해외 송금 설정 삭제
     @Transactional
-    public void deleteScheduledRemittance(Long recurId, String userId) {
-        RegularRemittance remittance = regularRemittanceRepository.findById(recurId)
+    public void deleteScheduledRemittance(Long regRemId, Long userId) {
+        RegularRemittance remittance = regularRemittanceRepository.findById(regRemId)
                 .orElseThrow(() -> new CustomBaseException(ErrorBaseCode.NOT_FOUND_REGULAR_REMITTANCE));
 
         if (!Objects.equals(remittance.getAccount().getUserId(), userId)) {

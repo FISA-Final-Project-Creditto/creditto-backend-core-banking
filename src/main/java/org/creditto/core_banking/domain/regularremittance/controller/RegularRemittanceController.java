@@ -65,12 +65,12 @@ public class RegularRemittanceController {
     }
 
     // 정기 해외 송금 설정 삭제
-    @DeleteMapping("/schedule/{recurId}")
+    @DeleteMapping("/schedule/{regRemId}")
     public ResponseEntity<BaseResponse<Void>> deleteScheduledRemittance(
-            @PathVariable("recurId") Long recurId,
-            @RequestParam("userId") String userId
+            @PathVariable("regRemId") Long regRemId,
+            @RequestParam("userId") Long userId
     ) {
-        regularRemittanceService.deleteScheduledRemittance(recurId, userId);
+        regularRemittanceService.deleteScheduledRemittance(regRemId, userId);
         return ApiResponseUtil.success(SuccessCode.OK);
     }
 
