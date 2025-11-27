@@ -8,23 +8,9 @@ jobs:
   build:
     runs-on: self-hosted
 
-    services:
-      mysql:
-        image: mysql:8.4
-        env:
-          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT }}
-          MYSQL_DATABASE: ${{ secrets.MYSQL_DB_NAME }}
-        ports: [ '3306:3306' ]
-
     steps:
       - name: checkout
         uses: actions/checkout@v3
-
-      - name: MySQL 초기화 대기
-        run: |
-          sleep 5
-
-        shell: bash
 
       - name: .env 파일 생성
         run: |
@@ -69,4 +55,5 @@ jobs:
         run: |
           rm .env
           rm -rf build
+          docker system prune -af --volumes
         shell: bash
