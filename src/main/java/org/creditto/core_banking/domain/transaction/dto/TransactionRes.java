@@ -20,7 +20,7 @@ public record TransactionRes (
                 transaction.getTxnAmount(),
                 transaction.getTxnType(),
                 transaction.getTypeId(),
-                transaction.getUpdatedAt()
+                transaction.getCreatedAt()
         );
     }
 }
