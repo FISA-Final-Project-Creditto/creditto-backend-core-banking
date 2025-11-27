@@ -7,6 +7,7 @@ import org.creditto.core_banking.global.response.ApiResponseUtil;
 import org.creditto.core_banking.global.response.BaseResponse;
 import org.creditto.core_banking.global.response.error.ErrorBaseCode;
 import org.springframework.core.NestedExceptionUtils;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.transaction.TransactionSystemException;
@@ -137,6 +138,18 @@ public class GlobalExceptionHandler {
     public ResponseEntity<BaseResponse<Void>> handleHttpRequestMethodNotSupportedException(final HttpRequestMethodNotSupportedException e) {
         logWarn(e);
         return ApiResponseUtil.failure(ErrorBaseCode.METHOD_NOT_ALLOWED);
+    }
+
+    /**
+     * 409 - DataIntegrityViolationException
+     * 예외 내용 : DB 무결성 제약 조건 위반
+     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<BaseResponse<Void>> handleDataIntegrityViolationException(final DataIntegrityViolationException e) {
+        logWarn(e);
+        Throwable root = NestedExceptionUtils.getMostSpecificCause(e);
+        String message = root.getMessage();
+        return ApiResponseUtil.failure(ErrorBaseCode.DB_CONFLICT, message);
     }
 
     /**

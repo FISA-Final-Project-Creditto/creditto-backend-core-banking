@@ -32,7 +32,7 @@ public abstract class RegularRemittance {
     @ManyToOne(fetch = FetchType.LAZY)
     private Account account;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     private Recipient recipient;
 
     @Enumerated(EnumType.STRING)

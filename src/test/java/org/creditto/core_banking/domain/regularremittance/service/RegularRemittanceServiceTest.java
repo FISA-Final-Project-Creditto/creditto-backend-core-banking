@@ -19,6 +19,7 @@ import org.creditto.core_banking.domain.regularremittance.repository.RegularRemi
 import org.creditto.core_banking.domain.remittancefee.entity.FeeRecord;
 import org.creditto.core_banking.domain.remittancefee.repository.FeeRecordRepository;
 import org.creditto.core_banking.global.common.CurrencyCode;
+import org.creditto.core_banking.global.response.error.ErrorBaseCode;
 import org.creditto.core_banking.global.response.exception.CustomBaseException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -40,7 +41,7 @@ import org.springframework.test.annotation.DirtiesContext;
 
 @SpringBootTest
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
-public class RegularRemittanceServiceTest {
+class RegularRemittanceServiceTest {
 
     @Autowired
     private RegularRemittanceService regularRemittanceService;
@@ -172,6 +173,38 @@ public class RegularRemittanceServiceTest {
         assertThat(result.getRegRemType()).isEqualTo("WEEKLY");
         assertThat(result.getSendAmount()).isEqualByComparingTo("5000");
         assertThat(result.getScheduledDay()).isEqualTo(DayOfWeek.FRIDAY);
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("동일한 월간 정기송금 등록 시 예외 발생")
+    void createScheduledRemittance_MonthlyDuplicate() {
+        RegularRemittanceCreateDto duplicateDto = new RegularRemittanceCreateDto(
+                testAccount.getAccountNo(), CurrencyCode.KRW, CurrencyCode.USD, BigDecimal.valueOf(1000), "MONTHLY", 15, null,
+                "Test Recipient", "+82", "01012345678", "Seoul", "USA", "Test Bank", "TEST", "123456789"
+        );
+
+        CustomBaseException exception = assertThrows(CustomBaseException.class,
+                () -> regularRemittanceService.createScheduledRemittance(testUserId, duplicateDto));
+
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorBaseCode.DUPLICATE_REMITTANCE);
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("동일한 주간 정기송금 등록 시 예외 발생")
+    void createScheduledRemittance_WeeklyDuplicate() {
+        RegularRemittanceCreateDto weeklyDto = new RegularRemittanceCreateDto(
+                testAccount.getAccountNo(), CurrencyCode.KRW, CurrencyCode.EUR, BigDecimal.valueOf(3000), "WEEKLY", null, DayOfWeek.MONDAY,
+                "Weekly Recipient", "+49", "01098765432", "Berlin", "DEU", "Weekly Bank", "WKBK", "9988776655"
+        );
+
+        regularRemittanceService.createScheduledRemittance(testUserId, weeklyDto);
+
+        CustomBaseException exception = assertThrows(CustomBaseException.class,
+                () -> regularRemittanceService.createScheduledRemittance(testUserId, weeklyDto));
+
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorBaseCode.DUPLICATE_REMITTANCE);
     }
 
 
