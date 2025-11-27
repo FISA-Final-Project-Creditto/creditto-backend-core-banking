@@ -147,9 +147,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<BaseResponse<Void>> handleDataIntegrityViolationException(final DataIntegrityViolationException e) {
         logWarn(e);
-        Throwable root = NestedExceptionUtils.getMostSpecificCause(e);
-        String message = root.getMessage();
-        return ApiResponseUtil.failure(ErrorBaseCode.DB_CONFLICT, message);
+        return ApiResponseUtil.failure(ErrorBaseCode.DB_CONFLICT);
     }
 
     /**
