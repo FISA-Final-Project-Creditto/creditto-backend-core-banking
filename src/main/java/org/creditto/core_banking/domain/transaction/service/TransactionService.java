@@ -25,7 +25,7 @@ public class TransactionService {
         List<Transaction> transactions = transactionRepository.findByAccountIdWithAccount(accountId);
 
         return transactions.stream()
-                  .map(TransactionRes::from)
+                .map(TransactionRes::from)
                 .toList();
     }
 
