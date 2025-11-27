@@ -60,7 +60,7 @@ class OneTimeRemittanceServiceTest {
 
         mockRecipientInfo = OverseasRemittanceRequestDto.RecipientInfo.builder()
                 .name("John Doe")
-                .accountNumber("1234567890")
+                .accountNo("1234567890")
                 .phoneNo("310-555-1234")
                 .phoneCc("+1")
                 .bankName("Test Bank")
@@ -71,7 +71,7 @@ class OneTimeRemittanceServiceTest {
 
         mockRecipientCreateDto = new RecipientCreateDto(
                 mockRecipientInfo.getName(),
-                mockRecipientInfo.getAccountNumber(),
+                mockRecipientInfo.getAccountNo(),
                 mockRecipientInfo.getBankName(),
                 mockRecipientInfo.getBankCode(),
                 mockRecipientInfo.getPhoneCc(),
@@ -83,7 +83,7 @@ class OneTimeRemittanceServiceTest {
         mockRecipient = Recipient.of(mockRecipientCreateDto);
 
         baseRequest = OverseasRemittanceRequestDto.builder()
-            .accountNumber(mockAccount.getAccountNo()) // 변경: accountId -> accountNumber
+            .accountNo(mockAccount.getAccountNo()) // 변경: accountId -> accountNumber
             .recipientInfo(mockRecipientInfo) // 변경: recipientId -> RecipientInfo
             .sendCurrency(CurrencyCode.KRW)
             .targetAmount(BigDecimal.valueOf(10_000))
