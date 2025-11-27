@@ -46,7 +46,7 @@ public class RemittanceFeeService {
                 .multiply(exchangeRate);
         BigDecimal sendAmountForUSD = amountInKRWForFlat.divide(usdExchangeRate, CALCULATION_SCALE, RoundingMode.HALF_UP);
 
-        log.info("[RemittanceFeeService] calculateAndSaveFee : sendAmountForUSD={}", sendAmountForUSD);
+        log.debug("[RemittanceFeeService] calculateAndSaveFee : sendAmountForUSD={}", sendAmountForUSD);
 
         // 수수료 계산에 사용될 각 정책 엔티티 조회
         FlatServiceFee flatFeePolicy = getFlatFeePolicy(sendAmountForUSD);
