@@ -30,6 +30,7 @@ public class Transaction extends BaseEntity {
 
     private Long typeId; // 거래 종류 ID
 
+    @Enumerated(EnumType.STRING)
     private TxnResult txnResult; // 거래 결과
 
     public static Transaction of(Account account, BigDecimal txnAmount, TxnType txnType, Long typeId, TxnResult txnResult) {
