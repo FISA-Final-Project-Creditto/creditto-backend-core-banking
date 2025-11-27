@@ -6,6 +6,7 @@ import org.creditto.core_banking.domain.account.repository.AccountRepository;
 import org.creditto.core_banking.domain.overseasremittance.dto.ExecuteRemittanceCommand;
 import org.creditto.core_banking.domain.overseasremittance.dto.OverseasRemittanceRequestDto;
 import org.creditto.core_banking.domain.overseasremittance.dto.OverseasRemittanceResponseDto;
+import org.creditto.core_banking.domain.overseasremittance.repository.OverseasRemittanceRepository;
 import org.creditto.core_banking.domain.recipient.dto.RecipientCreateDto;
 import org.creditto.core_banking.domain.recipient.entity.Recipient;
 import org.creditto.core_banking.domain.recipient.service.RecipientFactory;
@@ -13,6 +14,8 @@ import org.creditto.core_banking.global.response.error.ErrorBaseCode;
 import org.creditto.core_banking.global.response.exception.CustomBaseException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 /**
  * 해외송금 유스케이스를 조정하는 Application Service 입니다.
@@ -26,6 +29,7 @@ public class OneTimeRemittanceService {
     private final RemittanceProcessorService remittanceProcessorService;
     private final AccountRepository accountRepository;
     private final RecipientFactory recipientFactory;
+    private final OverseasRemittanceRepository overseasRemittanceRepository;
 
     /**
      * 클라이언트의 해외송금 요청을 받아 전체 송금 프로세스를 조정합니다.
@@ -58,5 +62,12 @@ public class OneTimeRemittanceService {
 
         // Command 실행 위임: 생성된 Command를 통해 실제 송금 로직 실행
         return remittanceProcessorService.execute(command);
+    }
+
+    public List<OverseasRemittanceResponseDto> getOneTimeRemittanceList(Long userId) {
+        return overseasRemittanceRepository.findByUserIdAndRecurIsNull(userId)
+                .stream()
+                .map(OverseasRemittanceResponseDto::from)
+                .toList();
     }
 }

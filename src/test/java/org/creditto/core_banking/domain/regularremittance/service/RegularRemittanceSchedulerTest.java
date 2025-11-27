@@ -68,8 +68,10 @@ class RegularRemittanceSchedulerTest {
     void setUp() {
         Long userId = 1L;
         account = Account.of("1002-123-456789", "예금계좌", BigDecimal.valueOf(1_000_000), DEPOSIT, ACTIVE, userId);
+        ReflectionTestUtils.setField(account, "id", 1L); // ID 설정
 
         recipient = createRecipient();
+        ReflectionTestUtils.setField(recipient, "recipientId", 1L); // ID 설정
     }
 
     @Test

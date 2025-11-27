@@ -1,16 +1,15 @@
 package org.creditto.core_banking.domain.recipient.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
-import jakarta.persistence.UniqueConstraint;
-import jakarta.persistence.Table;
 import lombok.*;
+import org.creditto.core_banking.domain.account.entity.Account;
 import org.creditto.core_banking.domain.recipient.dto.RecipientCreateDto;
+import org.creditto.core_banking.domain.regularremittance.entity.RegRemStatus;
 import org.creditto.core_banking.global.common.BaseEntity;
 import org.creditto.core_banking.global.common.CurrencyCode;
+
+import java.math.BigDecimal;
 
 @Entity
 @Table(uniqueConstraints = {
@@ -44,6 +43,7 @@ public class Recipient extends BaseEntity {
     private String country;
 
     // ex)KRW
+    @Enumerated(EnumType.STRING)
     private CurrencyCode currencyCode;
 
     public static Recipient of(RecipientCreateDto dto) {
@@ -57,5 +57,17 @@ public class Recipient extends BaseEntity {
                 .country(dto.country())
                 .currencyCode(dto.receiveCurrency())
                 .build();
+    }
+
+    public void updateDetails(
+            String phoneNo,
+            String bankName,
+            String bankCode,
+            String accountNo
+    ) {
+        this.phoneNo = phoneNo;
+        this.bankName = bankName;
+        this.bankCode = bankCode;
+        this.accountNo = accountNo;
     }
 }

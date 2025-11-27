@@ -1,0 +1,195 @@
+package org.creditto.core_banking.domain.regularremittance.service;
+
+import lombok.RequiredArgsConstructor;
+import org.creditto.core_banking.domain.account.entity.Account;
+import org.creditto.core_banking.domain.account.repository.AccountRepository;
+import org.creditto.core_banking.domain.overseasremittance.entity.OverseasRemittance;
+import org.creditto.core_banking.domain.overseasremittance.repository.OverseasRemittanceRepository;
+import org.creditto.core_banking.domain.recipient.dto.RecipientCreateDto;
+import org.creditto.core_banking.domain.recipient.entity.Recipient;
+import org.creditto.core_banking.domain.recipient.service.RecipientFactory;
+import org.creditto.core_banking.domain.regularremittance.dto.*;
+import org.creditto.core_banking.domain.regularremittance.entity.MonthlyRegularRemittance;
+import org.creditto.core_banking.domain.regularremittance.entity.RegularRemittance;
+import org.creditto.core_banking.domain.regularremittance.entity.WeeklyRegularRemittance;
+import org.creditto.core_banking.domain.regularremittance.repository.RegularRemittanceRepository;
+import org.creditto.core_banking.global.response.error.ErrorBaseCode;
+import org.creditto.core_banking.global.response.exception.CustomBaseException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
+@Service
+@Transactional(readOnly = true)
+@RequiredArgsConstructor
+public class RegularRemittanceService {
+
+    private final RegularRemittanceRepository regularRemittanceRepository;
+    private final OverseasRemittanceRepository overseasRemittanceRepository;
+    private final AccountRepository accountRepository;
+    private final RecipientFactory recipientFactory;
+
+    /**
+     * 특정 사용자의 모든 정기송금 설정 내역을 조회합니다.
+     *
+     * @param userId 사용자의 ID
+     * @return 해당 사용자의 모든 정기송금 설정 목록 ({@link RegularRemittanceResponseDto})
+     */
+    public List<RegularRemittanceResponseDto> getScheduledRemittancesByUserId(Long userId) {
+        List<RegularRemittance> remittances = regularRemittanceRepository.findByAccountUserId(userId);
+        return remittances.stream()
+                .map(RegularRemittanceResponseDto::from)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 특정 정기송금 설정에 대한 모든 송금 기록을 조회합니다.
+     *
+     * @param userId   사용자의 ID
+     * @param regRemId 조회할 정기송금의 ID
+     * @return 해당 정기송금 설정에 대한 모든 송금 기록 목록 ({@link RemittanceHistoryDto})
+     */
+    public List<RemittanceHistoryDto> getRegularRemittanceHistoryByRegRemId(Long userId, Long regRemId) {
+        RegularRemittance regularRemittance = regularRemittanceRepository.findById(regRemId)
+                .orElseThrow(() -> new CustomBaseException(ErrorBaseCode.NOT_FOUND_REGULAR_REMITTANCE));
+        verifyUserOwnership(regularRemittance.getAccount().getUserId(), userId);
+
+        return overseasRemittanceRepository.findByRecur_RegRemIdOrderByCreatedAtDesc(regRemId).stream()
+                .map(overseas -> new RemittanceHistoryDto(
+                        overseas.getSendAmount(),
+                        overseas.getExchange().getExchangeRate(),
+                        overseas.getCreatedAt().toLocalDate()
+                ))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 단일 정기송금 내역의 상세 정보를 조회합니다.
+     *
+     * @param userId       사용자의 ID
+     * @param remittanceId 조회할 송금의 ID
+     * @return 해당 송금의 상세 정보 ({@link RemittanceDetailDto})
+     */
+    public RemittanceDetailDto getRegularRemittanceDetail(Long userId, Long remittanceId, Long regRemId) {
+        OverseasRemittance overseasRemittance = overseasRemittanceRepository.findByIdAndRecur_RegRemId(remittanceId, regRemId)
+                .orElseThrow(() -> new CustomBaseException(ErrorBaseCode.NOT_FOUND_ENTITY));
+        verifyUserOwnership(overseasRemittance.getUserId(), userId);
+
+        return RemittanceDetailDto.builder()
+                .accountNo(overseasRemittance.getAccount().getAccountNo())
+                .totalFee(overseasRemittance.getFeeRecord().getTotalFee())
+                .sendAmount(overseasRemittance.getSendAmount())
+                .recipientBankName(overseasRemittance.getRecipient().getBankName())
+                .recipientAccountNo(overseasRemittance.getRecipient().getAccountNo())
+                .remittanceStatus(overseasRemittance.getRemittanceStatus())
+                .build();
+    }
+
+    /**
+     * 신규 정기송금을 등록합니다.
+     *
+     * @param userId 사용자의 ID
+     * @param dto    정기송금 생성에 필요한 정보를 담은 DTO
+     * @return 생성된 정기송금 정보 ({@link RegularRemittanceResponseDto})
+     */
+    @Transactional
+    public RegularRemittanceResponseDto createScheduledRemittance(Long userId, RegularRemittanceCreateDto dto) {
+        Account account = accountRepository.findByAccountNo(dto.getAccountNo())
+                .orElseThrow(() -> new CustomBaseException(ErrorBaseCode.NOT_FOUND_ACCOUNT));
+        verifyUserOwnership(account.getUserId(), userId);
+
+        RecipientCreateDto recipientCreateDto = new RecipientCreateDto(
+                dto.getRecipientName(),
+                dto.getRecipientAccountNo(),
+                dto.getRecipientBankName(),
+                dto.getRecipientBankCode(),
+                dto.getRecipientPhoneCc(),
+                dto.getRecipientPhoneNo(),
+                dto.getRecipientCountry(),
+                dto.getReceiveCurrency()
+        );
+        Recipient recipient = recipientFactory.findOrCreate(recipientCreateDto);
+
+        RegularRemittance newRemittance;
+        if ("MONTHLY".equalsIgnoreCase(dto.getRegRemType())) {
+            newRemittance = MonthlyRegularRemittance.of(
+                    account,
+                    recipient,
+                    dto.getSendCurrency(),
+                    dto.getReceiveCurrency(),
+                    dto.getSendAmount(),
+                    dto.getScheduledDate()
+            );
+        } else if ("WEEKLY".equalsIgnoreCase(dto.getRegRemType())) {
+            newRemittance = WeeklyRegularRemittance.of(
+                    account,
+                    recipient,
+                    dto.getSendCurrency(),
+                    dto.getReceiveCurrency(),
+                    dto.getSendAmount(),
+                    dto.getScheduledDay()
+            );
+        } else {
+            throw new CustomBaseException(ErrorBaseCode.BAD_REQUEST);
+        }
+
+        RegularRemittance savedRemittance = regularRemittanceRepository.save(newRemittance);
+        return RegularRemittanceResponseDto.from(savedRemittance);
+    }
+
+    /**
+     * 기존 정기 해외송금 설정을 수정합니다.
+     *
+     * @param regRemId 정기송금 ID
+     * @param userId   사용자 ID
+     * @param dto      정기송금 수정에 필요한 정보를 담은 DTO
+     */
+    @Transactional
+    public void updateScheduledRemittance(Long regRemId, Long userId, RegularRemittanceUpdateDto dto) {
+        RegularRemittance remittance = regularRemittanceRepository.findById(regRemId)
+                .orElseThrow(() -> new CustomBaseException(ErrorBaseCode.NOT_FOUND_REGULAR_REMITTANCE));
+        verifyUserOwnership(remittance.getAccount().getUserId(), userId);
+
+        Account account = accountRepository.findByAccountNo(dto.getAccountNo())
+                .orElseThrow(() -> new CustomBaseException(ErrorBaseCode.NOT_FOUND_ACCOUNT));
+        verifyUserOwnership(account.getUserId(), userId);
+
+        remittance.updateDetails(
+                account,
+                dto.getSendAmount(),
+                dto.getRegRemStatus()
+        );
+
+        if (remittance instanceof MonthlyRegularRemittance monthly) {
+            monthly.updateSchedule(dto.getScheduledDate());
+        } else if (remittance instanceof WeeklyRegularRemittance weekly) {
+            weekly.updateSchedule(dto.getScheduledDay());
+        }
+    }
+
+    /**
+     * 기존 정기 해외송금 설정을 삭제합니다.
+     *
+     * @param regRemId 삭제할 정기송금의 ID
+     * @param userId   사용자 ID
+     */
+    @Transactional
+    public void deleteScheduledRemittance(Long regRemId, Long userId) {
+        RegularRemittance remittance = regularRemittanceRepository.findById(regRemId)
+                .orElseThrow(() -> new CustomBaseException(ErrorBaseCode.NOT_FOUND_REGULAR_REMITTANCE));
+        verifyUserOwnership(remittance.getAccount().getUserId(), userId);
+
+        regularRemittanceRepository.delete(remittance);
+    }
+
+    private void verifyUserOwnership(Long ownerId, Long requesterId) {
+        if (!Objects.equals(ownerId, requesterId)) {
+            throw new CustomBaseException(ErrorBaseCode.FORBIDDEN);
+        }
+    }
+
+}
+
