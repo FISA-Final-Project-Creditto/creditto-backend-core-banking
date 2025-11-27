@@ -3,13 +3,9 @@ package org.creditto.core_banking.domain.recipient.entity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 import lombok.*;
-import org.creditto.core_banking.domain.account.entity.Account;
 import org.creditto.core_banking.domain.recipient.dto.RecipientCreateDto;
-import org.creditto.core_banking.domain.regularremittance.entity.RegRemStatus;
 import org.creditto.core_banking.global.common.BaseEntity;
 import org.creditto.core_banking.global.common.CurrencyCode;
-
-import java.math.BigDecimal;
 
 @Entity
 @Table(uniqueConstraints = {
@@ -53,7 +49,7 @@ public class Recipient extends BaseEntity {
                 .phoneCc(dto.phoneCc())
                 .bankName(dto.bankName())
                 .bankCode(dto.bankCode())
-                .accountNo(dto.accountNumber())
+                .accountNo(dto.accountNo())
                 .country(dto.country())
                 .currencyCode(dto.receiveCurrency())
                 .build();

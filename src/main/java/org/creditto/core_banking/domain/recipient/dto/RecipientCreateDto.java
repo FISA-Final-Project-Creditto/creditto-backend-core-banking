@@ -9,7 +9,7 @@ public record RecipientCreateDto(
         String name,
 
         @NotBlank(message = "수취인 계좌번호는 필수입니다.")
-        String accountNumber,
+        String accountNo,
 
         @NotBlank(message = "수취인 은행 이름은 필수입니다.")
         String bankName,

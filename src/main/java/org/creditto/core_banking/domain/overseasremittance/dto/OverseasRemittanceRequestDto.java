@@ -26,7 +26,7 @@ public class OverseasRemittanceRequestDto {
      * 출금될 계좌의 번호
      */
     @NotBlank(message = "출금 계좌번호는 필수입니다.")
-    private String accountNumber;
+    private String accountNo;
 
     /**
      * 수취인의 상세 정보
@@ -74,7 +74,7 @@ public class OverseasRemittanceRequestDto {
          * 수취인의 계좌번호
          */
         @NotBlank(message = "수취인 계좌번호는 필수입니다.")
-        private String accountNumber;
+        private String accountNo;
 
         /**
          * 수취인 은행의 이름
@@ -115,7 +115,7 @@ public class OverseasRemittanceRequestDto {
         public RecipientCreateDto toRecipientCreateDto() {
             return new RecipientCreateDto(
                 this.name,
-                this.accountNumber,
+                this.accountNo,
                 this.bankName,
                 this.bankCode,
                 this.phoneCc,

@@ -18,7 +18,7 @@ public class RecipientFactory {
     public Recipient findOrCreate(RecipientCreateDto dto) {
         return recipientRepository.findByBankCodeAndAccountNoAndName(
                 dto.bankCode(),
-                dto.accountNumber(),
+                dto.accountNo(),
                 dto.name()
         ).orElseGet(() -> {
             Recipient newRecipient = Recipient.of(dto);
