@@ -170,10 +170,11 @@ class RegularRemittanceSchedulerTest {
     @DisplayName("월간 정기송금 스케쥴링 - 120건 수행")
     void executeMonthlyRegularRemittance_handlesMoreThanHundredItems() {
         LocalDate fixedDate = LocalDate.of(2024, 7, 15);
+        LocalDate newStartedAt = LocalDate.of(2024, 1, 1);
         int scheduledDate = fixedDate.getDayOfMonth();
 
         List<MonthlyRegularRemittance> remittances = IntStream.range(0, 120)
-                .mapToObj(i -> MonthlyRegularRemittance.of(account, recipient, CurrencyCode.KRW, CurrencyCode.USD, BigDecimal.valueOf(1000), scheduledDate))
+                .mapToObj(i -> MonthlyRegularRemittance.of(account, recipient, CurrencyCode.KRW, CurrencyCode.USD, BigDecimal.valueOf(1000), scheduledDate, newStartedAt))
                 .toList();
 
         Page<MonthlyRegularRemittance> page = new PageImpl<>(remittances, PageRequest.of(0, 1000), remittances.size());
@@ -228,10 +229,11 @@ class RegularRemittanceSchedulerTest {
     @DisplayName("주간 정기송금 스케쥴링 - 120건 수행")
     void executeWeeklyRegularRemittance_handlesMoreThanHundredItems() {
         LocalDate fixedDate = LocalDate.of(2024, 7, 15);
+        LocalDate newStartedAt = LocalDate.of(2024, 1, 1);
         DayOfWeek scheduledDay = fixedDate.getDayOfWeek();
 
         List<WeeklyRegularRemittance> remittances = IntStream.range(0, 120)
-                .mapToObj(i -> WeeklyRegularRemittance.of(account, recipient, CurrencyCode.KRW, CurrencyCode.USD, BigDecimal.valueOf(3000), scheduledDay))
+                .mapToObj(i -> WeeklyRegularRemittance.of(account, recipient, CurrencyCode.KRW, CurrencyCode.USD, BigDecimal.valueOf(3000), scheduledDay, newStartedAt))
                 .toList();
 
         Page<WeeklyRegularRemittance> page = new PageImpl<>(remittances, PageRequest.of(0, 1000), remittances.size());
@@ -258,7 +260,9 @@ class RegularRemittanceSchedulerTest {
                 CurrencyCode.KRW,
                 CurrencyCode.USD,
                 BigDecimal.valueOf(1000),
-                scheduledDate
+                scheduledDate,
+                LocalDate.of(2024, 1, 1)
+
         );
         remittance.updateRegRemStatus(status);
         return remittance;
@@ -271,7 +275,8 @@ class RegularRemittanceSchedulerTest {
                 CurrencyCode.KRW,
                 CurrencyCode.USD,
                 BigDecimal.valueOf(3000),
-                scheduledDay
+                scheduledDay,
+                LocalDate.of(2024, 1, 1)
         );
     }
 
