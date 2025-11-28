@@ -15,8 +15,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 /**
  * 일회성 해외송금 요청을 처리하는 API 컨트롤러입니다.
  */
@@ -33,7 +31,7 @@ public class OneTimeRemittanceController {
      * @param request 송금에 필요한 정보(고객 ID, 수취인 정보, 금액 등)를 담은 DTO
      * @return 처리 결과를 담은 응답 DTO ({@link OverseasRemittanceResponseDto})
      */
-    @PostMapping("/{userId}")
+    @PostMapping("/once/{userId}")
     public ResponseEntity<BaseResponse<OverseasRemittanceResponseDto>> processRemittance(
             @PathVariable Long userId,
             @Valid @RequestBody OverseasRemittanceRequestDto request

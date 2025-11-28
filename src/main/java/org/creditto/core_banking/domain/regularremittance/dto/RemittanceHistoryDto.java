@@ -13,6 +13,5 @@ import java.time.LocalDate;
 public class RemittanceHistoryDto {
     BigDecimal sendAmount;
     BigDecimal exchangeRate;
-
     LocalDate createdDate;
 }

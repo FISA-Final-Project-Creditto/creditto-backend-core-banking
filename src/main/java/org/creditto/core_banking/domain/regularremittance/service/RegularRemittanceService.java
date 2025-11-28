@@ -20,7 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -42,7 +41,7 @@ public class RegularRemittanceService {
         List<RegularRemittance> remittances = regularRemittanceRepository.findByAccountUserId(userId);
         return remittances.stream()
                 .map(RegularRemittanceResponseDto::from)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**
@@ -55,6 +54,7 @@ public class RegularRemittanceService {
     public List<RemittanceHistoryDto> getRegularRemittanceHistoryByRegRemId(Long userId, Long regRemId) {
         RegularRemittance regularRemittance = regularRemittanceRepository.findById(regRemId)
                 .orElseThrow(() -> new CustomBaseException(ErrorBaseCode.NOT_FOUND_REGULAR_REMITTANCE));
+
         verifyUserOwnership(regularRemittance.getAccount().getUserId(), userId);
 
         return overseasRemittanceRepository.findByRecur_RegRemIdOrderByCreatedAtDesc(regRemId).stream()
@@ -63,7 +63,7 @@ public class RegularRemittanceService {
                         overseas.getExchange().getExchangeRate(),
                         overseas.getCreatedAt().toLocalDate()
                 ))
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**
@@ -136,6 +136,10 @@ public class RegularRemittanceService {
             throw new CustomBaseException(ErrorBaseCode.BAD_REQUEST);
         }
 
+        if (hasDuplicateRemittance(account, recipient, dto)) {
+            throw new CustomBaseException(ErrorBaseCode.DUPLICATE_REMITTANCE);
+        }
+
         RegularRemittance savedRemittance = regularRemittanceRepository.save(newRemittance);
         return RegularRemittanceResponseDto.from(savedRemittance);
     }
@@ -191,5 +195,34 @@ public class RegularRemittanceService {
         }
     }
 
-}
+    private boolean hasDuplicateRemittance(Account account, Recipient recipient, RegularRemittanceCreateDto dto) {
+        if ("MONTHLY".equalsIgnoreCase(dto.getRegRemType())) {
+            Integer scheduledDate = dto.getScheduledDate();
+            if (scheduledDate == null) {
+                return false;
+            }
+            return regularRemittanceRepository.existsMonthlyDuplicate(
+                    account,
+                    recipient,
+                    dto.getSendCurrency(),
+                    dto.getReceiveCurrency(),
+                    dto.getSendAmount(),
+                    scheduledDate
+            );
+        } else if ("WEEKLY".equalsIgnoreCase(dto.getRegRemType())) {
+            if (dto.getScheduledDay() == null) {
+                return false;
+            }
+            return regularRemittanceRepository.existsWeeklyDuplicate(
+                    account,
+                    recipient,
+                    dto.getSendCurrency(),
+                    dto.getReceiveCurrency(),
+                    dto.getSendAmount(),
+                    dto.getScheduledDay()
+            );
+        }
+        return false;
+    }
 
+}

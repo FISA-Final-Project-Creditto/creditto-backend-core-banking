@@ -7,10 +7,13 @@ import org.creditto.core_banking.global.response.ApiResponseUtil;
 import org.creditto.core_banking.global.response.BaseResponse;
 import org.creditto.core_banking.global.response.error.ErrorBaseCode;
 import org.springframework.core.NestedExceptionUtils;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.transaction.TransactionSystemException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.UnsatisfiedServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.NoHandlerFoundException;
@@ -70,7 +73,23 @@ public class GlobalExceptionHandler {
         logWarn(e);
         return ApiResponseUtil.failure(ErrorBaseCode.BAD_REQUEST_EMPTY_BODY);
     }
-    
+
+    /**
+     * 400 - MethodArgumentNotValidException
+     * 예외내용 : Argument 유효성 오류
+     */
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<BaseResponse<Void>> handlerMethodArgumentNotValidException(final MethodArgumentNotValidException e) {
+        logWarn(e);
+        String errorMessage = e.getBindingResult().getFieldErrors().stream()
+                .map(fieldError -> fieldError.getField() + ": " + fieldError.getDefaultMessage())
+                .collect(Collectors.joining(", "));
+        if (errorMessage.isBlank()) {
+            errorMessage = ErrorBaseCode.INVALID_REQUEST_BODY.getMessage();
+        }
+        return ApiResponseUtil.failure(ErrorBaseCode.INVALID_REQUEST_BODY, errorMessage);
+    }
+
     /**
      * 404 - EntityNotFoundException
      * 예외 내용 : 리소스에 대한 엔티티를 찾을 수 없는 오류
@@ -102,6 +121,16 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * 400 - UnsatisfiedServletRequestParameterException
+     * 예외 내용 : 필수 파라미터 누락
+     */
+    @ExceptionHandler(UnsatisfiedServletRequestParameterException.class)
+    public ResponseEntity<BaseResponse<Void>> handleUnsatisfiedServletRequestParameterException(final UnsatisfiedServletRequestParameterException e) {
+        logWarn(e);
+        return ApiResponseUtil.failure(ErrorBaseCode.MISSING_PARAM, e.getMessage());
+    }
+
+    /**
      * 405 - HttpRequestMethodNotSupportedException
      * 예외 내용 : 잘못된 HTTP METHOD로 요청했을 때 발생
      */
@@ -109,6 +138,16 @@ public class GlobalExceptionHandler {
     public ResponseEntity<BaseResponse<Void>> handleHttpRequestMethodNotSupportedException(final HttpRequestMethodNotSupportedException e) {
         logWarn(e);
         return ApiResponseUtil.failure(ErrorBaseCode.METHOD_NOT_ALLOWED);
+    }
+
+    /**
+     * 409 - DataIntegrityViolationException
+     * 예외 내용 : DB 무결성 제약 조건 위반
+     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<BaseResponse<Void>> handleDataIntegrityViolationException(final DataIntegrityViolationException e) {
+        logWarn(e);
+        return ApiResponseUtil.failure(ErrorBaseCode.DB_CONFLICT);
     }
 
     /**

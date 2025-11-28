@@ -118,5 +118,5 @@ jobs:
         run: |
           rm .env
           rm -rf build
-          docker image prune -a
+          docker system prune -af --volumes
         shell: bash
