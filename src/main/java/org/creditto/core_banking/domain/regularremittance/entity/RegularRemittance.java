@@ -14,6 +14,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -45,6 +46,9 @@ public abstract class RegularRemittance {
 
     @Enumerated(EnumType.STRING)
     private RegRemStatus regRemStatus;
+
+    // 송금 시작일
+    private LocalDate startedAt;
 
     // 엔티티 생성 시각 자동 저장
     @CreatedDate

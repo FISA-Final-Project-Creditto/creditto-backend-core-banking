@@ -120,6 +120,33 @@ class RegularRemittanceServiceTest {
 
     @Test
     @Transactional
+    @DisplayName("정기송금 상세 조회 (월간) - 성공")
+    void getScheduledRemittanceDetail_Monthly_Success() {
+        // when
+        RemittanceDetailDto result = regularRemittanceService.getScheduledRemittanceDetail(testUserId, testMonthlyRemittance.getRegRemId());
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.getAccountNo()).isEqualTo(testAccount.getAccountNo());
+        assertThat(result.getSendAmount()).isEqualByComparingTo(BigDecimal.valueOf(1000));
+        assertThat(result.getRegRemType()).isEqualTo("MONTHLY");
+        assertThat(result.getScheduledDate()).isEqualTo(15);
+        assertThat(result.getScheduledDay()).isNull();
+        assertThat(result.getRecipientName()).isEqualTo(testRecipient.getName());
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("정기송금 상세 조회 - 존재하지 않는 송금 ID")
+    void getScheduledRemittanceDetail_NotFound() {
+        // when & then
+        CustomBaseException exception = assertThrows(CustomBaseException.class,
+                () -> regularRemittanceService.getScheduledRemittanceDetail(testUserId, 999L));
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorBaseCode.NOT_FOUND_REGULAR_REMITTANCE);
+    }
+
+    @Test
+    @Transactional
     @DisplayName("다른 사용자의 송금 기록 조회 시 예외 발생")
     void getRegularRemittanceHistoryByRegRemId_Forbidden() {
         assertThrows(CustomBaseException.class, () -> regularRemittanceService.getRegularRemittanceHistoryByRegRemId(otherUserId, testMonthlyRemittance.getRegRemId()));
@@ -129,7 +156,7 @@ class RegularRemittanceServiceTest {
     @Transactional
     @DisplayName("단일 송금 내역 상세 조회")
     void getRegularRemittanceDetail_Success() {
-        RemittanceDetailDto result = regularRemittanceService.getRegularRemittanceDetail(testUserId, testOverseasRemittance.getRemittanceId(), testMonthlyRemittance.getRegRemId());
+        RemittanceHistoryDetailDto result = regularRemittanceService.getRemittanceHistoryDetail(testUserId, testOverseasRemittance.getRemittanceId(), testMonthlyRemittance.getRegRemId());
 
         assertThat(result).isNotNull();
         assertThat(result.getSendAmount()).isEqualByComparingTo("1300000");
@@ -140,7 +167,7 @@ class RegularRemittanceServiceTest {
     @Transactional
     @DisplayName("다른 사용자의 단일 송금 내역 상세 조회 시 예외 발생")
     void getRegularRemittanceDetail_Forbidden() {
-        assertThrows(CustomBaseException.class, () -> regularRemittanceService.getRegularRemittanceDetail(otherUserId, testOverseasRemittance.getRemittanceId(), testMonthlyRemittance.getRegRemId()));
+        assertThrows(CustomBaseException.class, () -> regularRemittanceService.getRemittanceHistoryDetail(otherUserId, testOverseasRemittance.getRemittanceId(), testMonthlyRemittance.getRegRemId()));
     }
 
     @Test
