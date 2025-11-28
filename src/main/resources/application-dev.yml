@@ -40,9 +40,12 @@ management:
     web:
       exposure:
         include: health, info
+  tracing:
+    sampling:
+      probability: 1.0
+  zipkin:
+    tracing:
+      endpoint: ${ZIPKIN_URL}/api/v2/spans
 
 logging:
-  level:
-    root: info
-    org.hibernate: warn
-    org.springframework: info
+  config: classpath:logback-dev.xml
