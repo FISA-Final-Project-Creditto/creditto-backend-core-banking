@@ -1,6 +1,5 @@
 package org.creditto.core_banking.domain.exchange.service;
 
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.creditto.core_banking.domain.exchange.dto.ExchangeRateRes;
 import org.creditto.core_banking.domain.exchange.dto.ExchangeReq;
@@ -12,6 +11,7 @@ import org.creditto.core_banking.global.feign.ExchangeRateProvider;
 import org.creditto.core_banking.global.response.error.ErrorBaseCode;
 import org.creditto.core_banking.global.response.exception.CustomBaseException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -20,6 +20,7 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class ExchangeService {
 
     private final ExchangeRateProvider exchangeRateProvider;
