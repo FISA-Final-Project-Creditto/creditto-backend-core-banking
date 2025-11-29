@@ -21,13 +21,13 @@ public class TransactionLogAspect {
         try {
             Object result = joinPoint.proceed();
             log.info("[TX-COMMIT] txId={} method={}", txId, joinPoint.getSignature());
-            TxContext.clear();
             return result;
         } catch (Exception e) {
             log.info("[TX-ROLLBACK] txId={} method={} error={}",
                     txId, joinPoint.getSignature(), e.getMessage());
-            TxContext.clear();
             throw e;
+        } finally {
+            TxContext.clear();
         }
     }
 }

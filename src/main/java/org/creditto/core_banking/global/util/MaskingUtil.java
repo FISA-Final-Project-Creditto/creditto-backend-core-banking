@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class MaskingUtil {
@@ -25,11 +26,15 @@ public class MaskingUtil {
             return raw;
         }
 
-        String masked = raw;
-        for (String fieldName : ACCOUNT_NUMBER_FIELD_NAMES) {
-            masked = maskJsonField(masked, fieldName);
-        }
-        return masked;
+        String fieldNamesPattern = ACCOUNT_NUMBER_FIELD_NAMES.stream()
+                .map(Pattern::quote)
+                .collect(Collectors.joining("|"));
+
+        Pattern stringPattern = Pattern.compile("(\"(?:" + fieldNamesPattern + ")\"\\s*:\\s*\")(.*?)(\")", Pattern.CASE_INSENSITIVE);
+        String masked = replaceWithMask(raw, stringPattern, true);
+
+        Pattern numericPattern = Pattern.compile("(\"(?:" + fieldNamesPattern + ")\"\\s*:\\s*)(\\d+)", Pattern.CASE_INSENSITIVE);
+        return replaceWithMask(masked, numericPattern, false);
     }
 
     public static String maskAccountNumber(String accountNumber) {
@@ -72,14 +77,6 @@ public class MaskingUtil {
         }
 
         return builder.toString();
-    }
-
-    public static String maskJsonField(String raw, String fieldName) {
-        Pattern stringPattern = Pattern.compile("(\\\"" + fieldName + "\\\"\\s*:\\s*\\\")(.*?)(\\\")", Pattern.CASE_INSENSITIVE);
-        String masked = replaceWithMask(raw, stringPattern, true);
-
-        Pattern numericPattern = Pattern.compile("(\\\"" + fieldName + "\\\"\\s*:\\s*)(\\d+)", Pattern.CASE_INSENSITIVE);
-        return replaceWithMask(masked, numericPattern, false);
     }
 
     private static String replaceWithMask(String value, Pattern pattern, boolean hasQuotes) {
