@@ -104,6 +104,7 @@ public class RegularRemittanceService {
 
         return overseasRemittanceRepository.findByRecur_RegRemIdOrderByCreatedAtDesc(regRemId).stream()
                 .map(overseas -> new RemittanceHistoryDto(
+                        overseas.getRemittanceId(),
                         overseas.getSendAmount(),
                         overseas.getExchange().getExchangeRate(),
                         overseas.getCreatedAt().toLocalDate()
