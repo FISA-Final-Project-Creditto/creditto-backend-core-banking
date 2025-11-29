@@ -3,6 +3,7 @@ package org.creditto.core_banking.domain.account.controller;
 import lombok.RequiredArgsConstructor;
 import org.creditto.core_banking.domain.account.dto.AccountCreateReq;
 import org.creditto.core_banking.domain.account.dto.AccountRes;
+import org.creditto.core_banking.domain.account.dto.AccountSummaryRes;
 import org.creditto.core_banking.domain.account.service.AccountService;
 import org.creditto.core_banking.global.response.ApiResponseUtil;
 import org.creditto.core_banking.global.response.BaseResponse;
@@ -52,7 +53,7 @@ public class AccountController {
     }
 
     @GetMapping("/balance/total")
-    public ResponseEntity<BaseResponse<BigDecimal>> getTotalBalanceByUserId(@RequestParam(name = "userId") Long userId) {
+    public ResponseEntity<BaseResponse<AccountSummaryRes>> getTotalBalanceByUserId(@RequestParam(name = "userId") Long userId) {
         return ApiResponseUtil.success(SuccessCode.OK, accountService.getTotalBalanceByUserId(userId));
     }
 }

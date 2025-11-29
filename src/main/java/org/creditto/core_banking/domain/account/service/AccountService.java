@@ -3,6 +3,7 @@ package org.creditto.core_banking.domain.account.service;
 import lombok.RequiredArgsConstructor;
 import org.creditto.core_banking.domain.account.dto.AccountCreateReq;
 import org.creditto.core_banking.domain.account.dto.AccountRes;
+import org.creditto.core_banking.domain.account.dto.AccountSummaryRes;
 import org.creditto.core_banking.domain.account.entity.Account;
 import org.creditto.core_banking.domain.account.entity.AccountState;
 import org.creditto.core_banking.domain.account.repository.AccountRepository;
@@ -16,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -97,7 +99,18 @@ public class AccountService {
                 .toList();
     }
 
-    public BigDecimal getTotalBalanceByUserId(Long userId) {
-        return accountRepository.sumAccountBalanceByUserId(userId);
+    public AccountSummaryRes getTotalBalanceByUserId(Long userId) {
+        List<Account> accountList = accountRepository.findAccountByUserId(userId);
+
+        BigDecimal sum = accountList.stream()
+                .filter(Objects::nonNull)
+                .map(Account::getBalance)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        long accountCount = accountList.stream()
+                .filter(Objects::nonNull)
+                .count();
+
+        return new AccountSummaryRes(accountCount, sum);
     }
 }
