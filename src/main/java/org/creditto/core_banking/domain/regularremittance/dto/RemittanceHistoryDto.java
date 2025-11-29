@@ -11,6 +11,7 @@ import java.time.LocalDate;
 @Builder
 @AllArgsConstructor
 public class RemittanceHistoryDto {
+    Long remittanceId;
     BigDecimal sendAmount;
     BigDecimal exchangeRate;
     LocalDate createdDate;
