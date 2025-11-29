@@ -33,13 +33,25 @@ public class RegularRemittanceController {
     }
 
     /**
+     * 특정 정기송금의 세부사항을 조회합니다.
+     *
+     * @param userId 사용자 ID
+     * @param regRemId 정기송금 ID
+     * @return 해당 정기송금 설정의 세부 사항 목록
+     */
+    @GetMapping("/{regRemId}")
+    public ResponseEntity<BaseResponse<RemittanceDetailDto>> getScheduledRemittanceDetail(@RequestParam("userId") Long userId, @PathVariable("regRemId") Long regRemId) {
+        return ApiResponseUtil.success(SuccessCode.OK, regularRemittanceService.getScheduledRemittanceDetail(userId, regRemId));
+    }
+
+    /**
      * 특정 정기송금 설정에 대한 모든 송금 기록을 조회합니다.
      *
      * @param regRemId 정기송금 ID
      * @param userId 사용자 ID
      * @return 해당 정기송금 설정에 대한 모든 송금 기록 목록 ({@link RemittanceHistoryDto})
      */
-    @GetMapping("/{regRemId}")
+    @GetMapping("/history/{regRemId}")
     public ResponseEntity<BaseResponse<List<RemittanceHistoryDto>>> getRemittanceRecordsByRecurId(@PathVariable("regRemId") Long regRemId, @RequestParam("userId") Long userId) {
         return ApiResponseUtil.success(SuccessCode.OK, regularRemittanceService.getRegularRemittanceHistoryByRegRemId(userId, regRemId));
     }
@@ -50,15 +62,15 @@ public class RegularRemittanceController {
      * @param regRemId 정기송금 ID
      * @param remittanceId 송금 ID
      * @param userId 사용자 ID
-     * @return 해당 송금의 상세 정보 ({@link RemittanceDetailDto})
+     * @return 해당 송금의 상세 정보 ({@link RemittanceHistoryDetailDto})
      */
-    @GetMapping("/{regRemId}/{remittanceId}")
-    public ResponseEntity<BaseResponse<RemittanceDetailDto>> getRegularRemittanceDetail(
+    @GetMapping("/history/{regRemId}/{remittanceId}")
+    public ResponseEntity<BaseResponse<RemittanceHistoryDetailDto>> getRemittanceHistoryDetail(
             @PathVariable Long regRemId,
             @PathVariable Long remittanceId,
             @RequestParam("userId") Long userId
     ) {
-        return ApiResponseUtil.success(SuccessCode.OK, regularRemittanceService.getRegularRemittanceDetail(userId, remittanceId, regRemId));
+        return ApiResponseUtil.success(SuccessCode.OK, regularRemittanceService.getRemittanceHistoryDetail(userId, remittanceId, regRemId));
     }
 
     /**

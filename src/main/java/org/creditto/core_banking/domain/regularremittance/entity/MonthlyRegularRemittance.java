@@ -12,6 +12,7 @@ import org.creditto.core_banking.domain.recipient.entity.Recipient;
 import org.creditto.core_banking.global.common.CurrencyCode;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 @Entity
 @Getter
@@ -32,7 +33,8 @@ public class MonthlyRegularRemittance extends RegularRemittance{
             CurrencyCode sendCurrency,
             CurrencyCode receivedCurrency,
             BigDecimal sendAmount,
-            Integer scheduledDate
+            Integer scheduledDate,
+            LocalDate startedAt
     ) {
         return MonthlyRegularRemittance.builder()
                 .account(account)
@@ -42,6 +44,7 @@ public class MonthlyRegularRemittance extends RegularRemittance{
                 .sendAmount(sendAmount)
                 .regRemStatus(RegRemStatus.ACTIVE)
                 .scheduledDate(scheduledDate)
+                .startedAt(startedAt)
                 .build();
     }
 }

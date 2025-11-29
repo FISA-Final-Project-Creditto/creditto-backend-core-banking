@@ -18,6 +18,7 @@ import org.creditto.core_banking.global.response.exception.CustomBaseException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DayOfWeek;
 import java.util.List;
 import java.util.Objects;
 
@@ -42,6 +43,50 @@ public class RegularRemittanceService {
         return remittances.stream()
                 .map(RegularRemittanceResponseDto::from)
                 .toList();
+    }
+
+    /**
+     * 특정 정기송금의 세부사항을 조회합니다.
+     *
+     * @param userId 사용자의 ID
+     * @param regRemId 정기송금 ID
+     * @return 해당 정기송금 설정의 세부 사항 목록
+     */
+    public RemittanceDetailDto getScheduledRemittanceDetail(Long userId, Long regRemId) {
+        RegularRemittance remittance = regularRemittanceRepository.findById(regRemId)
+                .orElseThrow(() -> new CustomBaseException(ErrorBaseCode.NOT_FOUND_REGULAR_REMITTANCE));
+
+        verifyUserOwnership(remittance.getAccount().getUserId(), userId);
+
+        Recipient recipient = remittance.getRecipient();
+        String regRemType = null;
+        Integer scheduledDate = null;
+        DayOfWeek scheduledDay = null;
+
+        if (remittance instanceof MonthlyRegularRemittance monthly) {
+            regRemType = "MONTHLY";
+            scheduledDate = monthly.getScheduledDate();
+        } else if (remittance instanceof WeeklyRegularRemittance weekly) {
+            regRemType = "WEEKLY";
+            scheduledDay = weekly.getScheduledDay();
+        }
+        return RemittanceDetailDto.builder()
+                .accountNo(remittance.getAccount().getAccountNo())
+                .sendAmount(remittance.getSendAmount())
+                .regRemType(regRemType)
+                .scheduledDate(scheduledDate)
+                .scheduledDay(scheduledDay)
+                .startedAt(remittance.getStartedAt())
+                .sendCurrency(remittance.getSendCurrency())
+                .recipientCountry(recipient.getCountry())
+                .recipientBankName(recipient.getBankName())
+                .recipientAccountNo(recipient.getAccountNo())
+                .receiveCurrency(remittance.getReceivedCurrency())
+                .recipientName(recipient.getName())
+                .recipientPhoneCc(recipient.getPhoneCc())
+                .recipientPhoneNo(recipient.getPhoneNo())
+                .regRemStatus(remittance.getRegRemStatus())
+                .build();
     }
 
     /**
@@ -71,14 +116,14 @@ public class RegularRemittanceService {
      *
      * @param userId       사용자의 ID
      * @param remittanceId 조회할 송금의 ID
-     * @return 해당 송금의 상세 정보 ({@link RemittanceDetailDto})
+     * @return 해당 송금의 상세 정보 ({@link RemittanceHistoryDetailDto})
      */
-    public RemittanceDetailDto getRegularRemittanceDetail(Long userId, Long remittanceId, Long regRemId) {
+    public RemittanceHistoryDetailDto getRemittanceHistoryDetail(Long userId, Long remittanceId, Long regRemId) {
         OverseasRemittance overseasRemittance = overseasRemittanceRepository.findByIdAndRecur_RegRemId(remittanceId, regRemId)
                 .orElseThrow(() -> new CustomBaseException(ErrorBaseCode.NOT_FOUND_ENTITY));
         verifyUserOwnership(overseasRemittance.getUserId(), userId);
 
-        return RemittanceDetailDto.builder()
+        return RemittanceHistoryDetailDto.builder()
                 .accountNo(overseasRemittance.getAccount().getAccountNo())
                 .totalFee(overseasRemittance.getFeeRecord().getTotalFee())
                 .sendAmount(overseasRemittance.getSendAmount())
@@ -121,7 +166,8 @@ public class RegularRemittanceService {
                     dto.getSendCurrency(),
                     dto.getReceiveCurrency(),
                     dto.getSendAmount(),
-                    dto.getScheduledDate()
+                    dto.getScheduledDate(),
+                    dto.getStartedAt()
             );
         } else if ("WEEKLY".equalsIgnoreCase(dto.getRegRemType())) {
             newRemittance = WeeklyRegularRemittance.of(
@@ -130,7 +176,8 @@ public class RegularRemittanceService {
                     dto.getSendCurrency(),
                     dto.getReceiveCurrency(),
                     dto.getSendAmount(),
-                    dto.getScheduledDay()
+                    dto.getScheduledDay(),
+                    dto.getStartedAt()
             );
         } else {
             throw new CustomBaseException(ErrorBaseCode.BAD_REQUEST);

@@ -64,7 +64,9 @@ class RegularRemittanceServiceTest {
     private Account testAccount;
     private Recipient testRecipient;
     private RegularRemittance testMonthlyRemittance;
+    private RegularRemittance testWeeklyRemittance;
     private OverseasRemittance testOverseasRemittance;
+    private LocalDate startedAt = LocalDate.of(2023, 1, 1);
 
     @BeforeEach
     void setup() {
@@ -76,7 +78,10 @@ class RegularRemittanceServiceTest {
         testRecipient = recipientRepository.save(Recipient.of(recipientDto));
 
         // 테스트용 월간 정기송금 생성
-        testMonthlyRemittance = regularRemittanceRepository.save(MonthlyRegularRemittance.of(testAccount, testRecipient, CurrencyCode.KRW, CurrencyCode.USD, BigDecimal.valueOf(1000), 15));
+        testMonthlyRemittance = regularRemittanceRepository.save(MonthlyRegularRemittance.of(testAccount, testRecipient, CurrencyCode.KRW, CurrencyCode.USD, BigDecimal.valueOf(1000), 15, startedAt));
+
+        // 테스트용 주간 정기송금 생성
+        testWeeklyRemittance = regularRemittanceRepository.save(WeeklyRegularRemittance.of(testAccount, testRecipient, CurrencyCode.KRW, CurrencyCode.USD, BigDecimal.valueOf(500), DayOfWeek.WEDNESDAY, startedAt));
 
         // 테스트용 해외송금(정기송금과 연결) 내역 생성
         ExchangeReq exchangeReq = new ExchangeReq(CurrencyCode.KRW, CurrencyCode.USD, new BigDecimal("1000"));
@@ -90,7 +95,7 @@ class RegularRemittanceServiceTest {
         Account otherAccount = accountRepository.save(Account.of("2002456789012", "Other Account", BigDecimal.valueOf(5000000), AccountType.DEPOSIT, AccountState.ACTIVE, otherUserId));
         RecipientCreateDto otherRecipientDto = new RecipientCreateDto("Other Recipient", "987654321", "Other Bank", "OTHR", "+44", "07123456789", "GBR", CurrencyCode.GBP);
         Recipient otherRecipient = recipientRepository.save(Recipient.of(otherRecipientDto));
-        regularRemittanceRepository.save(MonthlyRegularRemittance.of(otherAccount, otherRecipient, CurrencyCode.KRW, CurrencyCode.USD, BigDecimal.valueOf(500), 10));
+        regularRemittanceRepository.save(MonthlyRegularRemittance.of(otherAccount, otherRecipient, CurrencyCode.KRW, CurrencyCode.USD, BigDecimal.valueOf(500), 10, startedAt));
     }
 
     @Test
@@ -100,11 +105,7 @@ class RegularRemittanceServiceTest {
         List<RegularRemittanceResponseDto> result = regularRemittanceService.getScheduledRemittancesByUserId(testUserId);
 
         assertThat(result).isNotNull();
-        assertThat(result).hasSize(1);
-        RegularRemittanceResponseDto found = result.get(0);
-        assertThat(found.getSendAmount()).isEqualByComparingTo("1000");
-        assertThat(found.getScheduledDate()).isEqualTo(15);
-        assertThat(found.getRegRemType()).isEqualTo("MONTHLY");
+        assertThat(result).hasSize(2);
     }
 
     @Test
@@ -124,12 +125,68 @@ class RegularRemittanceServiceTest {
     void getRegularRemittanceHistoryByRegRemId_Forbidden() {
         assertThrows(CustomBaseException.class, () -> regularRemittanceService.getRegularRemittanceHistoryByRegRemId(otherUserId, testMonthlyRemittance.getRegRemId()));
     }
+    
+    @Test
+    @Transactional
+    @DisplayName("정기송금 상세 조회 (월간) - 성공")
+    void getScheduledRemittanceDetail_Monthly_Success() {
+        // when
+        RemittanceDetailDto result = regularRemittanceService.getScheduledRemittanceDetail(testUserId, testMonthlyRemittance.getRegRemId());
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.getAccountNo()).isEqualTo(testAccount.getAccountNo());
+        assertThat(result.getSendAmount()).isEqualByComparingTo(BigDecimal.valueOf(1000));
+        assertThat(result.getRegRemType()).isEqualTo("MONTHLY");
+        assertThat(result.getScheduledDate()).isEqualTo(15);
+        assertThat(result.getScheduledDay()).isNull();
+        assertThat(result.getRecipientName()).isEqualTo(testRecipient.getName());
+        assertThat(result.getStartedAt()).isEqualTo(startedAt);
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("정기송금 상세 조회 (주간) - 성공")
+    void getScheduledRemittanceDetail_Weekly_Success() {
+        // when
+        RemittanceDetailDto result = regularRemittanceService.getScheduledRemittanceDetail(testUserId, testWeeklyRemittance.getRegRemId());
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.getAccountNo()).isEqualTo(testAccount.getAccountNo());
+        assertThat(result.getSendAmount()).isEqualByComparingTo(BigDecimal.valueOf(500));
+        assertThat(result.getRegRemType()).isEqualTo("WEEKLY");
+        assertThat(result.getScheduledDay()).isEqualTo(DayOfWeek.WEDNESDAY);
+        assertThat(result.getScheduledDate()).isNull();
+        assertThat(result.getRecipientName()).isEqualTo(testRecipient.getName());
+        assertThat(result.getStartedAt()).isEqualTo(startedAt);
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("정기송금 상세 조회 - 다른 사용자 접근 시 예외 발생")
+    void getScheduledRemittanceDetail_Forbidden() {
+        // when & then
+        CustomBaseException exception = assertThrows(CustomBaseException.class,
+            () -> regularRemittanceService.getScheduledRemittanceDetail(otherUserId, testMonthlyRemittance.getRegRemId()));
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorBaseCode.FORBIDDEN);
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("정기송금 상세 조회 - 존재하지 않는 송금 ID")
+    void getScheduledRemittanceDetail_NotFound() {
+        // when & then
+        CustomBaseException exception = assertThrows(CustomBaseException.class,
+            () -> regularRemittanceService.getScheduledRemittanceDetail(testUserId, 999L));
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorBaseCode.NOT_FOUND_REGULAR_REMITTANCE);
+    }
 
     @Test
     @Transactional
     @DisplayName("단일 송금 내역 상세 조회")
     void getRegularRemittanceDetail_Success() {
-        RemittanceDetailDto result = regularRemittanceService.getRegularRemittanceDetail(testUserId, testOverseasRemittance.getRemittanceId(), testMonthlyRemittance.getRegRemId());
+        RemittanceHistoryDetailDto result = regularRemittanceService.getRemittanceHistoryDetail(testUserId, testOverseasRemittance.getRemittanceId(), testMonthlyRemittance.getRegRemId());
 
         assertThat(result).isNotNull();
         assertThat(result.getSendAmount()).isEqualByComparingTo("1300000");
@@ -140,15 +197,16 @@ class RegularRemittanceServiceTest {
     @Transactional
     @DisplayName("다른 사용자의 단일 송금 내역 상세 조회 시 예외 발생")
     void getRegularRemittanceDetail_Forbidden() {
-        assertThrows(CustomBaseException.class, () -> regularRemittanceService.getRegularRemittanceDetail(otherUserId, testOverseasRemittance.getRemittanceId(), testMonthlyRemittance.getRegRemId()));
+        assertThrows(CustomBaseException.class, () -> regularRemittanceService.getRemittanceHistoryDetail(otherUserId, testOverseasRemittance.getRemittanceId(), testMonthlyRemittance.getRegRemId()));
     }
 
     @Test
     @Transactional
     @DisplayName("월간 정기송금 신규 등록")
     void createScheduledRemittance_Monthly_Success() {
+        LocalDate newStartedAt = LocalDate.of(2025, 1, 1);
         RegularRemittanceCreateDto createDto = new RegularRemittanceCreateDto(
-                testAccount.getAccountNo(), CurrencyCode.KRW, CurrencyCode.JPY, BigDecimal.valueOf(2000), "MONTHLY", 20, null, "New Recipient", "+81", "09012345678", "Tokyo", "JPN", "New Bank", "NEWJ", "987654321"
+                testAccount.getAccountNo(), CurrencyCode.KRW, CurrencyCode.JPY, BigDecimal.valueOf(2000), "MONTHLY", 20, null, newStartedAt, "New Recipient", "+81", "09012345678", "Tokyo", "JPN", "New Bank", "NEWJ", "987654321"
         );
 
         RegularRemittanceResponseDto result = regularRemittanceService.createScheduledRemittance(testUserId, createDto);
@@ -163,8 +221,9 @@ class RegularRemittanceServiceTest {
     @Transactional
     @DisplayName("주간 정기송금 신규 등록")
     void createScheduledRemittance_Weekly_Success() {
+        LocalDate newStartedAt = LocalDate.of(2025, 1, 1);
         RegularRemittanceCreateDto createDto = new RegularRemittanceCreateDto(
-                testAccount.getAccountNo(), CurrencyCode.KRW, CurrencyCode.EUR, BigDecimal.valueOf(5000), "WEEKLY", null, DayOfWeek.FRIDAY, "Euro Recipient", "+49", "01712345678", "Berlin", "DEU", "Euro Bank", "EURB", "1122334455"
+                testAccount.getAccountNo(), CurrencyCode.KRW, CurrencyCode.EUR, BigDecimal.valueOf(5000), "WEEKLY", null, DayOfWeek.FRIDAY, newStartedAt, "Euro Recipient", "+49", "01712345678", "Berlin", "DEU", "Euro Bank", "EURB", "1122334455"
         );
 
         RegularRemittanceResponseDto result = regularRemittanceService.createScheduledRemittance(testUserId, createDto);
@@ -180,7 +239,7 @@ class RegularRemittanceServiceTest {
     @DisplayName("동일한 월간 정기송금 등록 시 예외 발생")
     void createScheduledRemittance_MonthlyDuplicate() {
         RegularRemittanceCreateDto duplicateDto = new RegularRemittanceCreateDto(
-                testAccount.getAccountNo(), CurrencyCode.KRW, CurrencyCode.USD, BigDecimal.valueOf(1000), "MONTHLY", 15, null,
+                testAccount.getAccountNo(), CurrencyCode.KRW, CurrencyCode.USD, BigDecimal.valueOf(1000), "MONTHLY", 15, null, startedAt,
                 "Test Recipient", "+82", "01012345678", "Seoul", "USA", "Test Bank", "TEST", "123456789"
         );
 
@@ -195,7 +254,7 @@ class RegularRemittanceServiceTest {
     @DisplayName("동일한 주간 정기송금 등록 시 예외 발생")
     void createScheduledRemittance_WeeklyDuplicate() {
         RegularRemittanceCreateDto weeklyDto = new RegularRemittanceCreateDto(
-                testAccount.getAccountNo(), CurrencyCode.KRW, CurrencyCode.EUR, BigDecimal.valueOf(3000), "WEEKLY", null, DayOfWeek.MONDAY,
+                testAccount.getAccountNo(), CurrencyCode.KRW, CurrencyCode.USD, BigDecimal.valueOf(500), "WEEKLY", null, DayOfWeek.WEDNESDAY, startedAt,
                 "Weekly Recipient", "+49", "01098765432", "Berlin", "DEU", "Weekly Bank", "WKBK", "9988776655"
         );
 

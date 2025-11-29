@@ -7,6 +7,7 @@ import org.creditto.core_banking.global.common.CurrencyCode;
 
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
+import java.time.LocalDate;
 
 @Getter
 @Builder
@@ -22,9 +23,11 @@ public class RegularRemittanceResponseDto {
     private CurrencyCode receivedCurrency;
     private RegRemStatus regRemStatus;
 
-    private String regRemType;            // 매월/매주
-    private Integer scheduledDate;        // 매월 송금
-    private DayOfWeek scheduledDay;    // 매주 송금
+    private String regRemType;          // 매월/매주
+    private Integer scheduledDate;      // 매월 송금
+    private DayOfWeek scheduledDay;     // 매주 송금
+
+    private LocalDate startedAt;        // 송금 시작일
 
     public static RegularRemittanceResponseDto from(RegularRemittance regularRemittance) {
         RegularRemittanceResponseDto.RegularRemittanceResponseDtoBuilder builder = RegularRemittanceResponseDto.builder()
@@ -34,7 +37,8 @@ public class RegularRemittanceResponseDto {
                 .recipientBankName(regularRemittance.getRecipient().getBankName())
                 .sendAmount(regularRemittance.getSendAmount())
                 .receivedCurrency(regularRemittance.getReceivedCurrency())
-                .regRemStatus(regularRemittance.getRegRemStatus());
+                .regRemStatus(regularRemittance.getRegRemStatus())
+                .startedAt(regularRemittance.getStartedAt());
 
         if (regularRemittance instanceof MonthlyRegularRemittance) {
             MonthlyRegularRemittance monthly = (MonthlyRegularRemittance) regularRemittance;
