@@ -7,12 +7,12 @@ import lombok.Getter;
 @Builder
 public class SingleExchangeRateRes {
 
-    private final String currencyUnit; // 통화 코드
+    private final String currencyCode; // 통화 코드
     private final String baseRate; // 매매 기준율
 
     public static SingleExchangeRateRes from(ExchangeRateRes exchangeRateRes) {
         return SingleExchangeRateRes.builder()
-            .currencyUnit(exchangeRateRes.getCurrencyUnit())
+            .currencyCode(exchangeRateRes.getCurrencyUnit())
             .baseRate(exchangeRateRes.getBaseRate())
             .build();
     }

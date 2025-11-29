@@ -214,7 +214,7 @@ class  ExchangeServiceTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.getCurrencyUnit()).isEqualTo("USD");
+        assertThat(result.getCurrencyCode()).isEqualTo("USD");
         assertThat(result.getBaseRate()).isEqualTo("1300.00");
     }
 
