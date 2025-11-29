@@ -95,4 +95,8 @@ public class AccountService {
                 .map(AccountRes::from)
                 .toList();
     }
+
+    public BigDecimal getTotalBalanceByUserId(Long userId) {
+        return accountRepository.sumAccountBalanceByUserId(userId);
+    }
 }
