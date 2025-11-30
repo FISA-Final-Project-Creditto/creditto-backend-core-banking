@@ -1,8 +1,10 @@
 package org.creditto.core_banking.domain.overseasremittance.service;
 
 import lombok.RequiredArgsConstructor;
+import org.creditto.core_banking.domain.overseasremittance.dto.CreditAnalysisRes;
 import org.creditto.core_banking.domain.overseasremittance.dto.OverseasRemittanceResponseDto;
 import org.creditto.core_banking.domain.overseasremittance.repository.OverseasRemittanceRepository;
+import org.creditto.core_banking.global.response.exception.CustomBaseException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +31,20 @@ public class RemittanceQueryService {
         return remittanceRepository.findByUserIdWithDetails(userId)
                 .stream()
                 .map(OverseasRemittanceResponseDto::from)
+                .toList();
+    }
+
+    /**
+     * 특정 고객의 해외송금 내역 일부를 신용도 분석용 DTO로 조회합니다.
+     *
+     * @param userId 조회할 송금의 ID
+     * @return 신용도 분석용 데이터 DTO
+     * @throws CustomBaseException 송금 내역을 찾을 수 없는 경우
+     */
+    public List<CreditAnalysisRes> getCreditAnalysisData(Long userId) {
+        return remittanceRepository.findByUserId(userId)
+                .stream()
+                .map(CreditAnalysisRes::from)
                 .toList();
     }
 }

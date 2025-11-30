@@ -15,6 +15,8 @@ import java.util.Optional;
 @Repository
 public interface OverseasRemittanceRepository extends JpaRepository<OverseasRemittance, Long> {
 
+    List<OverseasRemittance> findByUserId(Long userId);
+
     /**
      * 특정 고객(user)의 모든 송금 내역을 연관된 엔티티(수취인, 계좌, 환전, 수수료, 정기송금)와 함께 조회합니다.
      * Fetch Join을 사용하여 N+1 쿼리 문제를 방지합니다.
