@@ -9,6 +9,7 @@ import org.creditto.core_banking.domain.account.entity.AccountState;
 import org.creditto.core_banking.domain.account.entity.AccountType;
 import org.creditto.core_banking.domain.account.repository.AccountRepository;
 import org.creditto.core_banking.domain.account.service.AccountService;
+import org.creditto.core_banking.domain.account.service.PasswordValidator;
 import org.creditto.core_banking.domain.account.service.strategy.TransactionStrategy;
 import org.creditto.core_banking.domain.account.service.strategy.TransactionStrategyFactory;
 import org.creditto.core_banking.domain.transaction.entity.TxnType;
@@ -17,9 +18,11 @@ import org.creditto.core_banking.global.response.exception.CustomBaseException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -29,6 +32,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willDoNothing;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -39,6 +43,12 @@ class AccountServiceTest {
 
     @Mock
     private TransactionStrategyFactory strategyFactory;
+
+    @Mock
+    private PasswordValidator passwordValidator;
+
+    @Mock
+    private PasswordEncoder passwordEncoder;
 
     @Mock
     private TransactionStrategy mockStrategy;
@@ -52,38 +62,156 @@ class AccountServiceTest {
         // Given
         AccountCreateReq request = new AccountCreateReq(
                 "새로운 계좌",
-                AccountType.DEPOSIT
-        );
-
+                AccountType.DEPOSIT,
+                "1234",
+                "1234"
+                );
         Long userId = 1L;
+        String rawPassword = "1234";
+        String encodedPassword = "encoded_password";
 
-        // accountNo는 @PrePersist를 통해 엔티티 내부에서 생성되므로,
-        // 테스트에서는 accountRepository.save()가 반환할 Account 객체를 미리 정의하여 모킹합니다.
-        String expectedAccountNo = "MOCKED_ACCOUNT_NO"; // 테스트를 위한 가상의 계좌 번호
-        Account mockSavedAccount = Account.of(
-                expectedAccountNo, // @PrePersist에 의해 생성될 것으로 예상되는 계좌 번호
-                request.accountName(),
-                BigDecimal.ZERO,
-                request.accountType(),
-                AccountState.ACTIVE,
-                userId
-        );
-        // ID는 save 시점에 부여된다고 가정
-        given(accountRepository.save(any(Account.class))).willReturn(mockSavedAccount);
+        willDoNothing().given(passwordValidator).validatePassword(rawPassword);
+        given(passwordEncoder.encode(rawPassword)).willReturn(encodedPassword);
+
+        ArgumentCaptor<Account> accountCaptor = ArgumentCaptor.forClass(Account.class);
+
+        // 실제 save 메서드는 Account 객체를 받아 저장하고, 저장된 객체(ID가 부여된)를 반환해야 합니다.
+        // 여기서는 captor가 캡처한 인스턴스를 그대로 반환하도록 설정하여 로직을 검증합니다.
+        given(accountRepository.save(accountCaptor.capture())).willAnswer(invocation -> invocation.getArgument(0));
+
 
         // When
         AccountRes result = accountService.createAccount(request, userId);
 
         // Then
-        assertThat(result).isNotNull();
-        assertThat(result.accountNo()).isEqualTo(expectedAccountNo);
-        assertThat(result.accountName()).isEqualTo(request.accountName());
-        assertThat(result.accountType()).isEqualTo(request.accountType());
-        assertThat(result.accountState()).isEqualTo(AccountState.ACTIVE);
-        assertThat(result.userId()).isEqualTo(userId);
+        verify(passwordValidator).validatePassword(rawPassword);
+        verify(passwordEncoder).encode(rawPassword);
+        verify(accountRepository).save(any(Account.class));
 
+        Account capturedAccount = accountCaptor.getValue();
+        assertThat(capturedAccount.getPassword()).isEqualTo(request.accountName());
+        assertThat(capturedAccount.getAccountName()).isEqualTo(encodedPassword);
+        assertThat(capturedAccount.getAccountType()).isEqualTo(request.accountType());
+        assertThat(capturedAccount.getAccountState()).isEqualTo(AccountState.ACTIVE);
+        assertThat(capturedAccount.getUserId()).isEqualTo(userId);
     }
 
+    @Test
+    @DisplayName("계좌 생성 실패 - 비밀번호와 비밀번호 확인 불일치")
+    void createAccount_Failure_PasswordMismatch() {
+        // Given
+        AccountCreateReq request = new AccountCreateReq(
+                "새로운 계좌",
+                AccountType.DEPOSIT,
+                "1234",
+                "5678"
+                );
+        Long userId = 1L;
+
+        // BDDMockito.willDoNothing()... is used to explicitly state that a void method call is expected and should do nothing.
+        willDoNothing().given(passwordValidator).validatePassword(request.password());
+
+        // When & Then
+        assertThatThrownBy(() -> accountService.createAccount(request, userId))
+                .isInstanceOf(CustomBaseException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorBaseCode.MISMATCH_PASSWORD);
+
+        verify(passwordValidator).validatePassword(request.password());
+        verify(passwordEncoder, never()).encode(anyString());
+        verify(accountRepository, never()).save(any(Account.class));
+    }
+
+    @Test
+    @DisplayName("계좌 생성 실패 - 비밀번호 정책 위반")
+    void createAccount_Failure_InvalidPasswordPolicy() {
+        // Given
+        AccountCreateReq request = new AccountCreateReq(
+                "새로운 계좌",
+                AccountType.DEPOSIT,
+                "1111",
+                "1111"
+                );
+        Long userId = 1L;
+
+        doThrow(new CustomBaseException(ErrorBaseCode.PASSWORD_REPEATING_DIGITS))
+                .when(passwordValidator).validatePassword(request.password());
+
+        // When & Then
+        assertThatThrownBy(() -> accountService.createAccount(request, userId))
+                .isInstanceOf(CustomBaseException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorBaseCode.PASSWORD_REPEATING_DIGITS);
+
+        verify(passwordValidator).validatePassword(request.password());
+        verify(passwordEncoder, never()).encode(anyString());
+        verify(accountRepository, never()).save(any(Account.class));
+    }
+
+
+    @Test
+    @DisplayName("비밀번호 검증 성공")
+    void verifyPassword_Success() {
+        // Given
+        Long accountId = 1L;
+        String rawPassword = "1234";
+        String encodedPassword = "encoded_password";
+        Account mockAccount = Account.of("ACC001", "테스트 계좌", encodedPassword, BigDecimal.ZERO, AccountType.DEPOSIT, AccountState.ACTIVE, 1L);
+
+        given(accountRepository.findById(accountId)).willReturn(Optional.of(mockAccount));
+        given(passwordEncoder.matches(rawPassword, encodedPassword)).willReturn(true);
+
+        // When & Then
+        accountService.verifyPassword(accountId, rawPassword);
+        // No exception thrown means success
+
+        verify(accountRepository).findById(accountId);
+        verify(passwordEncoder).matches(rawPassword, encodedPassword);
+    }
+
+    @Test
+    @DisplayName("비밀번호 검증 실패 - 비밀번호 불일치")
+    void verifyPassword_Failure_IncorrectPassword() {
+        // Given
+        Long accountId = 1L;
+        String rawPassword = "wrong_password";
+        String encodedPassword = "encoded_password";
+        Account mockAccount = Account.of("ACC001", "테스트 계좌", encodedPassword, BigDecimal.ZERO, AccountType.DEPOSIT, AccountState.ACTIVE, 1L);
+
+        given(accountRepository.findById(accountId)).willReturn(Optional.of(mockAccount));
+        given(passwordEncoder.matches(rawPassword, encodedPassword)).willReturn(false);
+
+        // When & Then
+        assertThatThrownBy(() -> accountService.verifyPassword(accountId, rawPassword))
+                .isInstanceOf(CustomBaseException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorBaseCode.INVALID_PASSWORD);
+
+        verify(accountRepository).findById(accountId);
+        verify(passwordEncoder).matches(rawPassword, encodedPassword);
+    }
+
+    @Test
+    @DisplayName("비밀번호 검증 실패 - 계좌 없음")
+    void verifyPassword_Failure_AccountNotFound() {
+        // Given
+        Long accountId = 999L;
+        String rawPassword = "1234";
+
+        given(accountRepository.findById(accountId)).willReturn(Optional.empty());
+
+        // When & Then
+        assertThatThrownBy(() -> accountService.verifyPassword(accountId, rawPassword))
+                .isInstanceOf(CustomBaseException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorBaseCode.NOT_FOUND_ACCOUNT);
+
+        verify(accountRepository).findById(accountId);
+        verify(passwordEncoder, never()).matches(anyString(), anyString());
+    }
+
+
+    // --- 기존 테스트들 ---
     @Test
     @DisplayName("거래 처리 로직(processTransaction) 성공")
     void processTransaction_Success() {
@@ -93,29 +221,17 @@ class AccountServiceTest {
         TxnType txnType = TxnType.WITHDRAWAL;
         Long relatedId = null;
 
-        Account mockAccount = Account.of(
-                "ACC001",
-                "테스트 계좌",
-                BigDecimal.valueOf(50000),
-                AccountType.DEPOSIT,
-                AccountState.ACTIVE,
-                1L
-        );
+        Account mockAccount = Account.of("ACC001", "테스트 계좌", "password", BigDecimal.valueOf(50000), AccountType.DEPOSIT, AccountState.ACTIVE, 1L);
 
-        // 1. accountRepository.findById가 호출되면 mockAccount를 반환
         given(accountRepository.findById(accountId)).willReturn(Optional.of(mockAccount));
-        // 2. strategyFactory.getStrategy가 호출되면 가짜 전략(mockStrategy)을 반환
         given(strategyFactory.getStrategy(txnType)).willReturn(mockStrategy);
 
         // when
         accountService.processTransaction(accountId, amount, txnType, relatedId);
 
         // then
-        // 1. accountRepository.findById가 정확한 인자로 1번 호출되었는지 검증
         verify(accountRepository).findById(accountId);
-        // 2. strategyFactory.getStrategy가 정확한 인자로 1번 호출되었는지 검증
         verify(strategyFactory).getStrategy(txnType);
-        // 3. mockStrategy.execute가 정확한 인자들로 1번 호출되었는지 검증
         verify(mockStrategy).execute(mockAccount, amount, relatedId);
     }
 
@@ -124,19 +240,9 @@ class AccountServiceTest {
     void getBalance_ById_Success() {
         // given
         Long accountId = 1L;
-        String accountNo = "ACC001";
-        Long userId = 1L;
-        Account mockAccount = Account.of(
-                accountNo,
-                "테스트 계좌",
-                BigDecimal.valueOf(100000),
-                AccountType.DEPOSIT,
-                AccountState.ACTIVE,
-                userId
-        );
+        Account mockAccount = Account.of("ACC001", "테스트 계좌", "password", BigDecimal.valueOf(100000), AccountType.DEPOSIT, AccountState.ACTIVE, 1L);
 
-        given(accountRepository.findById(accountId))
-                .willReturn(Optional.of(mockAccount));
+        given(accountRepository.findById(accountId)).willReturn(Optional.of(mockAccount));
 
         // when
         AccountRes result = accountService.getAccountById(accountId);
@@ -166,29 +272,13 @@ class AccountServiceTest {
     void getAccountByUserId_Success() {
         // given
         Long userId = 1L;
-        
-        Account account1 = Account.of(
-                "ACC001",
-                "테스트 계좌",
-                BigDecimal.valueOf(100000),
-                AccountType.DEPOSIT,
-                AccountState.ACTIVE,
-                userId
-        );
 
-        Account account2 = Account.of(
-                "ACC002",
-                "적금계좌",
-                BigDecimal.valueOf(50000),
-                AccountType.SAVINGS,
-                AccountState.ACTIVE,
-                userId
-        );
-
+        Account account1 = Account.of("ACC001", "테스트 계좌", "pwd1", BigDecimal.valueOf(100000), AccountType.DEPOSIT, AccountState.ACTIVE, userId);
+        Account account2 = Account.of("ACC002", "적금계좌", "pwd2", BigDecimal.valueOf(50000), AccountType.SAVINGS, AccountState.ACTIVE, userId);
 
         given(accountRepository.findAccountByUserId(userId))
                 .willReturn(List.of(account1, account2));
-        
+
         // when
         List<AccountRes> result = accountService.getAccountByUserId(userId);
 

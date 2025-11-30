@@ -71,7 +71,7 @@ class RegularRemittanceServiceTest {
     @BeforeEach
     void setup() {
         // 테스트용 계정 생성
-        testAccount = accountRepository.save(Account.of("1002456789012", "Test Account", BigDecimal.valueOf(10000000), AccountType.DEPOSIT, AccountState.ACTIVE, testUserId));
+        testAccount = accountRepository.save(Account.of("1002456789012", "1058", "Test Account", BigDecimal.valueOf(10000000), AccountType.DEPOSIT, AccountState.ACTIVE, testUserId));
 
         // 테스트용 수취인 생성
         RecipientCreateDto recipientDto = new RecipientCreateDto("Test Recipient", "123456789", "Test Bank", "TEST", "+82", "01012345678", "USA", CurrencyCode.USD);
@@ -92,7 +92,7 @@ class RegularRemittanceServiceTest {
         testOverseasRemittance = overseasRemittanceRepository.save(OverseasRemittance.of(testRecipient, testAccount, testMonthlyRemittance, exchange, feeRecord, new BigDecimal("1300000"), command));
 
         // 다른 사용자를 위한 데이터
-        Account otherAccount = accountRepository.save(Account.of("2002456789012", "Other Account", BigDecimal.valueOf(5000000), AccountType.DEPOSIT, AccountState.ACTIVE, otherUserId));
+        Account otherAccount = accountRepository.save(Account.of("2002456789012", "1058", "Other Account", BigDecimal.valueOf(5000000), AccountType.DEPOSIT, AccountState.ACTIVE, otherUserId));
         RecipientCreateDto otherRecipientDto = new RecipientCreateDto("Other Recipient", "987654321", "Other Bank", "OTHR", "+44", "07123456789", "GBR", CurrencyCode.GBP);
         Recipient otherRecipient = recipientRepository.save(Recipient.of(otherRecipientDto));
         regularRemittanceRepository.save(MonthlyRegularRemittance.of(otherAccount, otherRecipient, CurrencyCode.KRW, CurrencyCode.USD, BigDecimal.valueOf(500), 10, startedAt));

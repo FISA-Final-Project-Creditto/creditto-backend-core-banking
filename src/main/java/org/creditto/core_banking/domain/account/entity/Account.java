@@ -25,6 +25,9 @@ public class Account extends BaseEntity {
     @Column(updatable = false, unique = true)
     private String accountNo;
 
+    @Column(nullable = false)
+    private String password;
+
     private String accountName;
 
     @Column(precision = 20, scale = 2) // => 정수18자리, 소수점 부분 2자리
@@ -39,9 +42,10 @@ public class Account extends BaseEntity {
     @Column(updatable = false)
     private Long userId;
 
-    public static Account of(String accountNo, String accountName, BigDecimal balance, AccountType accountType, AccountState accountState, Long userId) {
+    public static Account of(String accountNo, String accountName, String password, BigDecimal balance, AccountType accountType, AccountState accountState, Long userId) {
         return Account.builder()
                 .accountNo(accountNo)
+                .password(password)
                 .accountName(accountName)
                 .balance(balance)
                 .accountType(accountType)

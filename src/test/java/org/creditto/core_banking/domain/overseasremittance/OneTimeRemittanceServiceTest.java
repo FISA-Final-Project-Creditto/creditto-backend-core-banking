@@ -56,7 +56,7 @@ class OneTimeRemittanceServiceTest {
     @BeforeEach
     void setUp() {
         userId = 1L;
-        mockAccount = Account.of("1002-123-456789", "예금계좌", BigDecimal.valueOf(600_000), DEPOSIT , ACTIVE, userId);
+        mockAccount = Account.of("1002-123-456789", "예금계좌", "password", BigDecimal.valueOf(600_000), DEPOSIT , ACTIVE, userId);
 
         mockRecipientInfo = OverseasRemittanceRequestDto.RecipientInfo.builder()
                 .name("John Doe")

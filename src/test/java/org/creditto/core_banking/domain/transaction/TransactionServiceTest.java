@@ -41,6 +41,7 @@ class TransactionServiceTest {
         Account mockAccount = Account.of(
                 "123-456",
                 "테스트 계좌",
+                "password",
                 BigDecimal.ZERO,
                 AccountType.SAVINGS,
                 AccountState.ACTIVE,

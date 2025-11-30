@@ -12,6 +12,7 @@ import org.creditto.core_banking.domain.account.service.strategy.TransactionStra
 import org.creditto.core_banking.domain.transaction.entity.TxnType;
 import org.creditto.core_banking.global.response.error.ErrorBaseCode;
 import org.creditto.core_banking.global.response.exception.CustomBaseException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +26,8 @@ public class AccountService {
 
     private final AccountRepository accountRepository;
     private final TransactionStrategyFactory strategyFactory;
+    private final PasswordValidator passwordValidator;
+    private final PasswordEncoder passwordEncoder;
 
 
     /**
@@ -37,9 +40,21 @@ public class AccountService {
      */
     @Transactional
     public AccountRes createAccount(AccountCreateReq request, Long userId) {
+        // 비밀번호 유효성 검사
+        passwordValidator.validatePassword(request.password());
+
+        // 비밀번호 일치 확인
+        if (!request.password().equals(request.passwordConfirmation())) {
+            throw new CustomBaseException(ErrorBaseCode.MISMATCH_PASSWORD);
+        }
+
+        // 비밀번호 인코딩
+        String encodedPassword = passwordEncoder.encode(request.password());
+
         // accountNo는 Account 엔티티의 @PrePersist 메서드에서 생성
         Account account = Account.of(
                 null, // accountNo는 @PrePersist에서 설정되므로 null로 전달
+                encodedPassword,
                 request.accountName(),
                 BigDecimal.ZERO,
                 request.accountType(),
@@ -49,6 +64,18 @@ public class AccountService {
 
         Account savedAccount = accountRepository.save(account);
         return AccountRes.from(savedAccount);
+    }
+
+    // 비밀번호 검증
+    public void verifyPassword(Long accountId, String rawPassword) {
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new CustomBaseException(ErrorBaseCode.NOT_FOUND_ACCOUNT));
+
+        String encodedPassword = account.getPassword();
+
+        if (!passwordEncoder.matches(rawPassword, encodedPassword)) {
+            throw new CustomBaseException(ErrorBaseCode.INVALID_PASSWORD);
+        }
     }
 
     /**
