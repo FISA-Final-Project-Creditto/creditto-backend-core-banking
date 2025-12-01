@@ -19,7 +19,7 @@ public enum CurrencyCode {
     USD("USD", "미국 달러"),
     JPY("JPY", "일본 옌", 100),
     EUR("EUR", "유로"),
-    CNY("CNY", "중국 위안"),
+    THB("THB", "태국 바트"),
     AUD("AUD", "호주 달러"),
     BHD("BHD", "바레인 디나르"),
     HKD("HKD", "홍콩 달러"),

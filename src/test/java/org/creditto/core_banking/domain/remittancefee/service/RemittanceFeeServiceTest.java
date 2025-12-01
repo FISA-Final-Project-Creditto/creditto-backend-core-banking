@@ -54,7 +54,6 @@ class RemittanceFeeServiceTest {
     private PctServiceFee pctFeePolicyActive;
     private NetworkFee networkFeePolicyUSD;
     private NetworkFee networkFeePolicyJPY;
-    private NetworkFee networkFeePolicyCNY;
 
     @BeforeEach
     void setUp() {
@@ -70,7 +69,6 @@ class RemittanceFeeServiceTest {
         pctFeePolicyActive = PctServiceFee.of(1L, new BigDecimal("0.2"), true);
         networkFeePolicyUSD = NetworkFee.of(1L, CurrencyCode.USD, new BigDecimal("15"));
         networkFeePolicyJPY = NetworkFee.of(2L, CurrencyCode.JPY, new BigDecimal("2000"));
-        networkFeePolicyCNY = NetworkFee.of(3L, CurrencyCode.CNY, new BigDecimal("100"));
     }
 
     @Nested
@@ -151,42 +149,7 @@ class RemittanceFeeServiceTest {
             assertThat(savedFeeRecord.getTotalFee()).isEqualByComparingTo(expectedTotalFee);
         }
 
-        @Test
-        @DisplayName("CNH 송금 (PctFee 비활성)")
-        void calculateAndSaveFee_ForCNY_When_PctFeeInactive() {
-            // given
-            BigDecimal sendAmount = new BigDecimal("3500"); // 3500위안
-            BigDecimal exchangeRate = new BigDecimal("205.35"); // 1위안 = 205.35원
-            CurrencyCode currency = CurrencyCode.CNY;
-            BigDecimal exchangeRateUSD = new BigDecimal("1458.86");
-            RemittanceFeeReq req = new RemittanceFeeReq(exchangeRate, sendAmount, currency, exchangeRateUSD);
 
-            when(flatServiceFeeRepository.findFirstByUpperLimitGreaterThanEqualOrderByUpperLimitAsc(any(BigDecimal.class)))
-                    .thenAnswer(invocation -> {
-                        BigDecimal amountInUSD = invocation.getArgument(0, BigDecimal.class);
-                        return flatFeeTiers.stream()
-                                .filter(tier -> tier.getUpperLimit().compareTo(amountInUSD) >= 0)
-                                .findFirst();
-                    });
-            when(pctServiceFeeRepository.findFirstByOrderByPctServiceFeeIdAsc()).thenReturn(Optional.of(pctFeePolicyInactive));
-            when(networkFeeRepository.findByCurrencyCode(currency)).thenReturn(Optional.of(networkFeePolicyCNY));
-            when(feeRecordRepository.save(any(FeeRecord.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-            // when
-            remittanceFeeService.calculateAndSaveFee(req);
-
-            // then
-            ArgumentCaptor<FeeRecord> feeRecordCaptor = ArgumentCaptor.forClass(FeeRecord.class);
-            verify(feeRecordRepository).save(feeRecordCaptor.capture());
-            FeeRecord savedFeeRecord = feeRecordCaptor.getValue();
-
-            // flatFeeInKRW = 2500
-            // pctFeeInKRW = 0 (비활성)
-            // networkFeeInKRW = 100 * 205.35 = 20535
-            // totalFee = 2500 + 0 + 20535 = 23035.00
-            BigDecimal expectedTotalFee = new BigDecimal("23035.00");
-            assertThat(savedFeeRecord.getTotalFee()).isEqualByComparingTo(expectedTotalFee);
-        }
 
         @Test
         @DisplayName("USD 송금 (PctFee 활성)")
