@@ -17,11 +17,14 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDateTime;
 import java.math.BigDecimal;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -32,6 +35,37 @@ class TransactionServiceTest {
 
     @InjectMocks
     private TransactionService transactionService;
+
+    @Test
+    @DisplayName("계좌 ID로 거래 내역 조회 성공")
+    void findByAccountId_Success() {
+        // given
+        Long accountId = 1L;
+        Account mockAccount = mock(Account.class);
+        given(mockAccount.getId()).willReturn(accountId);
+
+        Transaction mockTransaction = mock(Transaction.class);
+        given(mockTransaction.getId()).willReturn(99L);
+        given(mockTransaction.getAccount()).willReturn(mockAccount);
+        given(mockTransaction.getTxnAmount()).willReturn(new BigDecimal("1000"));
+        given(mockTransaction.getTxnType()).willReturn(TxnType.DEPOSIT);
+        given(mockTransaction.getTypeId()).willReturn(1L);
+        given(mockTransaction.getCreatedAt()).willReturn(java.time.LocalDateTime.now());
+
+        given(transactionRepository.findByAccountIdWithAccount(accountId)).willReturn(List.of(mockTransaction));
+
+        // when
+        List<TransactionRes> result = transactionService.findByAccountId(accountId);
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result).hasSize(1);
+        TransactionRes res = result.get(0);
+        assertThat(res.txnId()).isEqualTo(99L);
+        assertThat(res.accountId()).isEqualTo(accountId);
+        assertThat(res.txnAmount()).isEqualByComparingTo("1000");
+        assertThat(res.txnType()).isEqualTo(TxnType.DEPOSIT);
+    }
 
     @Test
     @DisplayName("새로운 거래 기록 저장 성공")

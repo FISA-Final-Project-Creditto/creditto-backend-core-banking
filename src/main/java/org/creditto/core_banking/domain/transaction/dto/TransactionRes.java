@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 public record TransactionRes (
+        Long txnId,
         Long accountId,
         BigDecimal txnAmount,
         TxnType txnType,
@@ -16,6 +17,7 @@ public record TransactionRes (
 
     public static TransactionRes from(Transaction transaction) {
         return new TransactionRes (
+                transaction.getId(),
                 transaction.getAccount().getId(),
                 transaction.getTxnAmount(),
                 transaction.getTxnType(),

@@ -59,6 +59,7 @@ public class ExchangeRateProvider {
                     ));
 
         } catch (Exception e) {
+            log.error("Failed to get exchange rates from external API", e);
             throw new RuntimeException(ErrorBaseCode.INTERNAL_SERVER_ERROR.getMessage(), e);
         }
     }
