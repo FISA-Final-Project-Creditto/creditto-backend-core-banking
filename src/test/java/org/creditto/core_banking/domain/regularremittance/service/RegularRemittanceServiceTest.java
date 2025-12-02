@@ -314,4 +314,22 @@ class RegularRemittanceServiceTest {
         Long regRemId = testMonthlyRemittance.getRegRemId();
         assertThrows(CustomBaseException.class, () -> regularRemittanceService.deleteScheduledRemittance(regRemId, otherUserId));
     }
+
+    @Test
+    @Transactional
+    @DisplayName("정기송금 생성 시 startedAt 필드 영속성 확인")
+    void createScheduledRemittance_PersistsStartedAt() {
+        LocalDate expectedStartedAt = LocalDate.of(2024, 6, 1);
+        RegularRemittanceCreateDto createDto = new RegularRemittanceCreateDto(
+                testAccount.getAccountNo(), CurrencyCode.KRW, CurrencyCode.USD, BigDecimal.valueOf(3000), "MONTHLY", 10, null, expectedStartedAt, "Persistent Recipient", "+1", "1234567890", "New York", "USA", "Citi", "CITI", "9876543210"
+        );
+
+        RegularRemittanceResponseDto result = regularRemittanceService.createScheduledRemittance(testUserId, createDto);
+
+        // Retrieve the entity directly from the repository
+        RegularRemittance savedRemittance = regularRemittanceRepository.findById(result.getRegRemId())
+                .orElseThrow(() -> new AssertionError("Saved remittance not found"));
+
+        assertThat(savedRemittance.getStartedAt()).isEqualTo(expectedStartedAt);
+    }
 }
