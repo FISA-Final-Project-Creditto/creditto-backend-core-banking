@@ -1,6 +1,10 @@
 package org.creditto.core_banking.domain.exchange;
 
-import org.creditto.core_banking.domain.exchange.dto.*;
+import org.creditto.core_banking.domain.exchange.dto.ExchangeRateRes;
+import org.creditto.core_banking.domain.exchange.dto.ExchangeReq;
+import org.creditto.core_banking.domain.exchange.dto.ExchangeRes;
+import org.creditto.core_banking.domain.exchange.dto.PreferentialRateRes;
+import org.creditto.core_banking.domain.exchange.dto.SingleExchangeRateRes;
 import org.creditto.core_banking.domain.exchange.entity.Exchange;
 import org.creditto.core_banking.domain.exchange.repository.ExchangeRepository;
 import org.creditto.core_banking.domain.exchange.service.ExchangeService;
@@ -232,5 +236,3 @@ class  ExchangeServiceTest {
         assertThat(result.appliedRate()).isEqualByComparingTo(expectedAppliedRate);
     }
 }
-
-    
