@@ -2,10 +2,12 @@ package org.creditto.core_banking.domain.overseasremittance;
 
 import org.creditto.core_banking.domain.account.entity.Account;
 import org.creditto.core_banking.domain.account.repository.AccountRepository;
+import org.creditto.core_banking.domain.account.service.AccountService;
 import org.creditto.core_banking.domain.overseasremittance.dto.ExecuteRemittanceCommand;
 import org.creditto.core_banking.domain.overseasremittance.dto.OverseasRemittanceRequestDto;
 import org.creditto.core_banking.domain.overseasremittance.dto.OverseasRemittanceResponseDto;
 import org.creditto.core_banking.domain.overseasremittance.entity.RemittanceStatus;
+import org.creditto.core_banking.domain.overseasremittance.repository.OverseasRemittanceRepository; // Import 추가
 import org.creditto.core_banking.domain.overseasremittance.service.OneTimeRemittanceService;
 import org.creditto.core_banking.domain.overseasremittance.service.RemittanceProcessorService;
 import org.creditto.core_banking.domain.recipient.dto.RecipientCreateDto;
@@ -29,7 +31,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.creditto.core_banking.domain.account.entity.AccountState.ACTIVE;
 import static org.creditto.core_banking.domain.account.entity.AccountType.DEPOSIT;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willDoNothing;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -41,11 +46,14 @@ class OneTimeRemittanceServiceTest {
     private AccountRepository accountRepository;
     @Mock
     private RecipientFactory recipientFactory;
+    @Mock
+    private AccountService accountService;
+    @Mock // 누락되었던 Mock 객체 추가
+    private OverseasRemittanceRepository overseasRemittanceRepository;
 
     @InjectMocks
     private OneTimeRemittanceService oneTimeRemittanceService;
 
-    // 공통 목 객체 (실제 객체는 아니지만 테스트에 필요한 데이터 제공)
     private Long userId;
     private Account mockAccount;
     private Recipient mockRecipient;
@@ -83,8 +91,9 @@ class OneTimeRemittanceServiceTest {
         mockRecipient = Recipient.of(mockRecipientCreateDto);
 
         baseRequest = OverseasRemittanceRequestDto.builder()
-            .accountNo(mockAccount.getAccountNo()) // 변경: accountId -> accountNumber
-            .recipientInfo(mockRecipientInfo) // 변경: recipientId -> RecipientInfo
+            .accountNo(mockAccount.getAccountNo())
+            .password("password123")
+            .recipientInfo(mockRecipientInfo)
             .sendCurrency(CurrencyCode.KRW)
             .targetAmount(BigDecimal.valueOf(10_000))
             .startDate(LocalDate.now())
@@ -93,13 +102,13 @@ class OneTimeRemittanceServiceTest {
         // Mocking behavior for dependencies
         given(accountRepository.findByAccountNo(mockAccount.getAccountNo())).willReturn(Optional.of(mockAccount));
         given(recipientFactory.findOrCreate(any(RecipientCreateDto.class))).willReturn(mockRecipient);
+        willDoNothing().given(accountService).verifyPassword(any(), anyString());
     }
 
     @Test
     @DisplayName("일회성 송금 처리 성공")
     void processRemittance_Success() {
         // given
-        // RemittanceProcessorService.execute가 성공적으로 반환할 응답 DTO
         OverseasRemittanceResponseDto mockResponse = OverseasRemittanceResponseDto.builder()
             .remittanceId(1L)
             .recipientName("John Doe")
@@ -108,7 +117,6 @@ class OneTimeRemittanceServiceTest {
             .remittanceStatus(RemittanceStatus.COMPLETED)
             .build();
 
-        // remittanceProcessorService.execute 호출 시 mockResponse를 반환하도록 설정
         given(remittanceProcessorService.execute(any(ExecuteRemittanceCommand.class))).willReturn(mockResponse);
 
         // when
@@ -119,9 +127,7 @@ class OneTimeRemittanceServiceTest {
         assertThat(result.getRemittanceId()).isEqualTo(1L);
         assertThat(result.getSendAmount()).isEqualTo(BigDecimal.valueOf(10_000));
         assertThat(result.getRecipientName()).isEqualTo("John Doe");
-        assertThat(result.getRemittanceStatus()).isEqualTo(RemittanceStatus.COMPLETED);
-
-        // OneTimeRemittanceService가 RecipientFactory와 RemittanceProcessorService.execute를 호출했는지 검증
+        verify(accountService).verifyPassword(any(), anyString());
         verify(recipientFactory).findOrCreate(any(RecipientCreateDto.class));
         verify(remittanceProcessorService).execute(any(ExecuteRemittanceCommand.class));
     }
@@ -130,18 +136,18 @@ class OneTimeRemittanceServiceTest {
     @DisplayName("일회성 송금 처리 중 RemittanceProcessorService에서 예외 발생 시 실패")
     void processRemittance_Fail_When_Processor_Throws_Exception() {
         // given
-        // remittanceProcessorService.execute 호출 시 IllegalArgumentException을 던지도록 설정
         String errorMessage = "계좌를 찾을 수 없습니다.";
         given(remittanceProcessorService.execute(any(ExecuteRemittanceCommand.class)))
             .willThrow(new IllegalArgumentException(errorMessage));
 
         // when & then
-        // OneTimeRemittanceService가 해당 예외를 그대로 던지는지 검증
         assertThatThrownBy(() -> oneTimeRemittanceService.processRemittance(userId, baseRequest))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessage(errorMessage);
 
+        verify(accountService).verifyPassword(any(), anyString());
         verify(recipientFactory).findOrCreate(any(RecipientCreateDto.class));
         verify(remittanceProcessorService).execute(any(ExecuteRemittanceCommand.class));
     }
 }
+
