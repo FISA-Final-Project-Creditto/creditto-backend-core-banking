@@ -12,8 +12,7 @@ import org.creditto.core_banking.global.common.BaseEntity;
 public class CreditScore extends BaseEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long userId;
 
     @Column(name = "score", nullable = false)
     private Integer score;
