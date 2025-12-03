@@ -1,15 +1,13 @@
 package org.creditto.core_banking.domain.exchange.controller;
 
 import lombok.RequiredArgsConstructor;
-import org.creditto.core_banking.domain.exchange.dto.ExchangeRateRes;
-import org.creditto.core_banking.domain.exchange.dto.ExchangeReq;
-import org.creditto.core_banking.domain.exchange.dto.ExchangeRes;
+import org.creditto.core_banking.domain.creditscore.service.CreditScoreService;
+import org.creditto.core_banking.domain.exchange.dto.*;
 import org.creditto.core_banking.domain.exchange.service.ExchangeService;
 import org.creditto.core_banking.global.response.ApiResponseUtil;
 import org.creditto.core_banking.global.response.BaseResponse;
 import org.creditto.core_banking.global.response.SuccessCode;
 import org.springframework.http.ResponseEntity;
-import org.creditto.core_banking.domain.exchange.dto.SingleExchangeRateRes;
 import org.creditto.core_banking.global.common.CurrencyCode;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,6 +24,7 @@ import java.util.Map;
 public class ExchangeController {
 
     private final ExchangeService exchangeService;
+    private final CreditScoreService  creditScoreService;
 
     /**
      * 최신 환율 정보 조회
@@ -49,14 +48,9 @@ public class ExchangeController {
         return ApiResponseUtil.success(SuccessCode.OK, exchangeService.getRateByCurrency(currencyCode));
     }
 
-    /**
-     * 환전 요청 처리
-     *
-     * @param request 환전 요청 정보 (계좌 ID, 통화, 금액 등)
-     * @return 성공 응답 및 환전 결과 정보
-     */
-    @PostMapping
-    public ResponseEntity<BaseResponse<ExchangeRes>> exchange(@RequestBody ExchangeReq request) {
-        return ApiResponseUtil.success(SuccessCode.OK, exchangeService.exchange(request));
+    @GetMapping("/preferential-rate/{userId}")
+    public ResponseEntity<BaseResponse<PreferentialRateRes>> getPreferentialRate(@PathVariable Long userId) {
+        double rate = creditScoreService.getPreferentialRate(userId);
+        return ApiResponseUtil.success(SuccessCode.OK, new  PreferentialRateRes(rate));
     }
 }

@@ -74,6 +74,9 @@ public class RemittanceProcessorService {
         Recipient recipient = recipientRepository.findById(command.recipientId())
                 .orElseThrow(() -> new CustomBaseException(NOT_FOUND_RECIPIENT));
 
+        Long userId = account.getUserId();
+
+
         // 정기 송금 정보 조회 (regRemId가 있을 경우)
         RegularRemittance regularRemittance = Optional.ofNullable(command.regRemId())
                 .map(id -> regularRemittanceRepository.findById(id)
@@ -81,7 +84,7 @@ public class RemittanceProcessorService {
                 .orElse(null);
 
         // 1. ExchangeService를 통해 환전 처리 및 결과(DTO) 수신
-        ExchangeRes exchangeRes = exchange(command);
+        ExchangeRes exchangeRes = exchange(userId, command);
 
         // 실제 송금해야 할 금액
         BigDecimal actualSendAmount = exchangeRes.exchangeAmount();
@@ -135,9 +138,9 @@ public class RemittanceProcessorService {
         return OverseasRemittanceResponseDto.from(overseasRemittance);
     }
 
-    private ExchangeRes exchange(ExecuteRemittanceCommand command) {
+    private ExchangeRes exchange(Long userId, ExecuteRemittanceCommand command) {
         ExchangeReq exchangeReq = ExchangeReq.of(command.sendCurrency(), command.receiveCurrency(), command.targetAmount());
-        return exchangeService.exchange(exchangeReq);
+        return exchangeService.exchange(userId, exchangeReq);
     }
 
     private FeeRecord calculateFee(ExchangeRes exchangeRes, CurrencyCode currencyCode) {

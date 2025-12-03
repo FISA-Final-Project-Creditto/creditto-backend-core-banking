@@ -7,6 +7,7 @@ import org.creditto.core_banking.domain.exchange.dto.SingleExchangeRateRes;
 import org.creditto.core_banking.domain.exchange.entity.Exchange;
 import org.creditto.core_banking.domain.exchange.repository.ExchangeRepository;
 import org.creditto.core_banking.domain.exchange.service.ExchangeService;
+import org.creditto.core_banking.domain.creditscore.service.CreditScoreService;
 import org.creditto.core_banking.global.common.CurrencyCode;
 import org.creditto.core_banking.global.feign.ExchangeRateProvider;
 import org.creditto.core_banking.global.response.error.ErrorBaseCode;
@@ -38,6 +39,9 @@ class  ExchangeServiceTest {
     @Mock
     private ExchangeRepository exchangeRepository;
 
+    @Mock
+    private CreditScoreService creditScoreService;
+
     @InjectMocks
     private ExchangeService exchangeService;
 
@@ -45,13 +49,12 @@ class  ExchangeServiceTest {
     private ExchangeRateRes jpyRate;
     private Map<String, ExchangeRateRes> rateMap;
 
-    // 테스트에 사용할 상수 정의
     private static final BigDecimal SPREAD_RATE = new BigDecimal("0.01");
-    private static final BigDecimal PREFERENTIAL_RATE = new BigDecimal("0.5");
+    private static final BigDecimal MOCK_PREFERENTIAL_RATE = new BigDecimal("0.5");
+
 
     @BeforeEach
     void setUp() {
-        // Mock DTO 설정: Builder 패턴을 사용하여 객체 생성
         usdRate = ExchangeRateRes.builder()
                 .result(1)
                 .currencyUnit("USD")
@@ -76,37 +79,31 @@ class  ExchangeServiceTest {
     @DisplayName("환전 성공: 원화 -> 외화 (100 USD 요청)")
     void exchange_KRWToForeign_Success() {
         // Given
+        Long userId = 1L;
         BigDecimal targetUsdAmount = new BigDecimal("100.00");
         ExchangeReq request = new ExchangeReq(CurrencyCode.KRW, CurrencyCode.USD, targetUsdAmount);
         Exchange mockExchange = Exchange.builder().id(1L).build();
 
-        // 서비스의 실제 계산 로직을 테스트 코드에 반영
         BigDecimal baseRate = new BigDecimal(usdRate.getBaseRate());
-        BigDecimal effectiveSpread = SPREAD_RATE.multiply(BigDecimal.ONE.subtract(PREFERENTIAL_RATE));
-        BigDecimal appliedRate = baseRate.multiply(BigDecimal.ONE.add(effectiveSpread)); // 살 때 환율
-        BigDecimal expectedKrwDebit = targetUsdAmount.multiply(appliedRate).setScale(0, RoundingMode.CEILING); // 100 * (1300 * 1.005) = 130,650
+        BigDecimal effectiveSpread = SPREAD_RATE.multiply(BigDecimal.ONE.subtract(MOCK_PREFERENTIAL_RATE));
+        BigDecimal appliedRate = baseRate.multiply(BigDecimal.ONE.add(effectiveSpread));
+        BigDecimal expectedKrwDebit = targetUsdAmount.multiply(appliedRate).setScale(0, RoundingMode.CEILING);
 
-        // fromAmountInUSD 계산 (KRW -> USD)
-        // fromAmount는 expectedKrwDebit (원화)
-        // KRW의 기준 환율은 1
-        // USD의 기준 환율은 usdRate.getBaseRate()
         BigDecimal expectedFromAmountInUSD = expectedKrwDebit.divide(new BigDecimal(usdRate.getBaseRate()), 2, RoundingMode.HALF_UP);
 
         given(exchangeRateProvider.getExchangeRates()).willReturn(rateMap);
         given(exchangeRepository.save(any(Exchange.class))).willReturn(mockExchange);
-
+        given(creditScoreService.getPreferentialRate(userId)).willReturn(MOCK_PREFERENTIAL_RATE.doubleValue());
 
         // When
-        ExchangeRes response = exchangeService.exchange(request);
+        ExchangeRes response = exchangeService.exchange(userId, request);
 
         // Then
-        // 1. 응답 검증
         assertThat(response.fromCurrency()).isEqualTo(CurrencyCode.KRW);
         assertThat(response.toCurrency()).isEqualTo(CurrencyCode.USD);
         assertThat(response.exchangeAmount()).isEqualByComparingTo(expectedKrwDebit);
         assertThat(response.fromAmountInUSD()).isEqualByComparingTo(expectedFromAmountInUSD);
 
-        // 2. 환전 내역 저장 여부 검증
         verify(exchangeRepository).save(any());
     }
 
@@ -114,40 +111,30 @@ class  ExchangeServiceTest {
     @DisplayName("환전 성공: 외화 -> 원화 (100,000 KRW 수취 요청)")
     void exchange_ForeignToKRW_Success() {
         // Given
-        BigDecimal targetKrwAmount = new BigDecimal("100000"); // 100,000 KRW를 받고 싶음
+        Long userId = 1L;
+        BigDecimal targetKrwAmount = new BigDecimal("100000");
         ExchangeReq request = new ExchangeReq(CurrencyCode.USD, CurrencyCode.KRW, targetKrwAmount);
         Exchange mockExchange = Exchange.builder().id(1L).build();
 
-        // 서비스의 실제 계산 로직을 테스트 코드에 반영
         BigDecimal baseRate = new BigDecimal(usdRate.getBaseRate());
-        BigDecimal effectiveSpread = SPREAD_RATE.multiply(BigDecimal.ONE.subtract(PREFERENTIAL_RATE));
-        BigDecimal appliedRate = baseRate.multiply(BigDecimal.ONE.subtract(effectiveSpread)); // 팔 때 환율: 1300 * 0.995 = 1293.5
-
-        // 100,000 KRW를 받기 위해 필요한 USD(fromAmount)를 역산
-        // fromAmount = 100000 / 1293.5 = 77.309... -> 77.31 (올림)
+        BigDecimal effectiveSpread = SPREAD_RATE.multiply(BigDecimal.ONE.subtract(MOCK_PREFERENTIAL_RATE));
+        BigDecimal appliedRate = baseRate.multiply(BigDecimal.ONE.subtract(effectiveSpread));
         BigDecimal expectedFromAmount = targetKrwAmount.divide(appliedRate, 2, RoundingMode.CEILING);
-
-        // fromAmountInUSD 계산 (USD -> KRW)
-        // fromAmount는 expectedFromAmount (USD)
-        // USD의 기준 환율은 usdRate.getBaseRate()
-        // USD의 USD 기준 환율은 usdRate.getBaseRate()
-        // 따라서 fromAmountInUSD는 expectedFromAmount와 동일
         BigDecimal expectedFromAmountInUSD = expectedFromAmount;
 
         given(exchangeRateProvider.getExchangeRates()).willReturn(rateMap);
         given(exchangeRepository.save(any(Exchange.class))).willReturn(mockExchange);
+        given(creditScoreService.getPreferentialRate(userId)).willReturn(MOCK_PREFERENTIAL_RATE.doubleValue());
 
         // When
-        ExchangeRes response = exchangeService.exchange(request);
+        ExchangeRes response = exchangeService.exchange(userId, request);
 
         // Then
-        // 1. 응답 검증
         assertThat(response.fromCurrency()).isEqualTo(CurrencyCode.USD);
         assertThat(response.toCurrency()).isEqualTo(CurrencyCode.KRW);
-        assertThat(response.exchangeAmount()).isEqualByComparingTo(expectedFromAmount); // 내야 할 외화 금액 검증
+        assertThat(response.exchangeAmount()).isEqualByComparingTo(expectedFromAmount);
         assertThat(response.fromAmountInUSD()).isEqualByComparingTo(expectedFromAmountInUSD);
 
-        // 2. 환전 내역 저장 여부 검증
         verify(exchangeRepository).save(any());
     }
 
@@ -155,29 +142,23 @@ class  ExchangeServiceTest {
     @DisplayName("환전 성공: 원화 -> 외화 (100 JPY 요청)")
     void exchange_KRWToJPY_Success() {
         // Given
-        BigDecimal targetJpyAmount = new BigDecimal("100.00"); // 100 JPY
+        Long userId = 1L;
+        BigDecimal targetJpyAmount = new BigDecimal("100.00");
         ExchangeReq request = new ExchangeReq(CurrencyCode.KRW, CurrencyCode.JPY, targetJpyAmount);
         Exchange mockExchange = Exchange.builder().id(1L).build();
 
-        // 서비스의 실제 계산 로직을 테스트 코드에 반영
-        // JPY의 baseRate는 100 JPY당 900원 (jpyRate.baseRate)
-        // 1 JPY당 환율은 900 / 100 = 9.00원
-        BigDecimal baseRatePerUnit = new BigDecimal(jpyRate.getBaseRate()).divide(new BigDecimal(CurrencyCode.JPY.getUnit()), 4, RoundingMode.HALF_UP); // 900.00 / 100 = 9.00
-        BigDecimal effectiveSpread = SPREAD_RATE.multiply(BigDecimal.ONE.subtract(PREFERENTIAL_RATE));
-        BigDecimal appliedRate = baseRatePerUnit.multiply(BigDecimal.ONE.add(effectiveSpread)); // 살 때 환율: 9.00 * (1 + 0.005) = 9.045
-        BigDecimal expectedKrwDebit = targetJpyAmount.multiply(appliedRate).setScale(0, RoundingMode.CEILING); // 100 * 9.045 = 905
-
-        // fromAmountInUSD 계산 (KRW -> JPY)
-        // fromAmount는 expectedKrwDebit (원화)
-        // KRW의 기준 환율은 1
-        // USD의 기준 환율은 usdRate.getBaseRate()
+        BigDecimal baseRatePerUnit = new BigDecimal(jpyRate.getBaseRate()).divide(new BigDecimal(CurrencyCode.JPY.getUnit()), 4, RoundingMode.HALF_UP);
+        BigDecimal effectiveSpread = SPREAD_RATE.multiply(BigDecimal.ONE.subtract(MOCK_PREFERENTIAL_RATE));
+        BigDecimal appliedRate = baseRatePerUnit.multiply(BigDecimal.ONE.add(effectiveSpread));
+        BigDecimal expectedKrwDebit = targetJpyAmount.multiply(appliedRate).setScale(0, RoundingMode.CEILING);
         BigDecimal expectedFromAmountInUSD = expectedKrwDebit.divide(new BigDecimal(usdRate.getBaseRate()), 2, RoundingMode.HALF_UP);
 
         given(exchangeRateProvider.getExchangeRates()).willReturn(rateMap);
         given(exchangeRepository.save(any(Exchange.class))).willReturn(mockExchange);
+        given(creditScoreService.getPreferentialRate(userId)).willReturn(MOCK_PREFERENTIAL_RATE.doubleValue());
 
         // When
-        ExchangeRes response = exchangeService.exchange(request);
+        ExchangeRes response = exchangeService.exchange(userId, request);
 
         // Then
         assertThat(response.fromCurrency()).isEqualTo(CurrencyCode.KRW);
@@ -192,12 +173,14 @@ class  ExchangeServiceTest {
     @DisplayName("지원하지 않는 통화로 환전 요청 시 실패")
     void exchange_Fail_UnsupportedCurrency() {
         // Given
+        Long userId = 1L;
         ExchangeReq request = new ExchangeReq(CurrencyCode.KRW, CurrencyCode.EUR, new BigDecimal("100.00"));
 
         given(exchangeRateProvider.getExchangeRates()).willReturn(rateMap);
+        given(creditScoreService.getPreferentialRate(userId)).willReturn(MOCK_PREFERENTIAL_RATE.doubleValue());
 
         // When & Then
-        assertThatThrownBy(() -> exchangeService.exchange(request))
+        assertThatThrownBy(() -> exchangeService.exchange(userId, request))
                 .isInstanceOf(CustomBaseException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorBaseCode.CURRENCY_NOT_SUPPORTED);
@@ -206,13 +189,10 @@ class  ExchangeServiceTest {
     @Test
     @DisplayName("특정 통화(USD) 환율 조회 성공")
     void getRateByCurrency_Success() {
-        // Given
         given(exchangeRateProvider.getExchangeRates()).willReturn(rateMap);
 
-        // When
         SingleExchangeRateRes result = exchangeService.getRateByCurrency(CurrencyCode.USD);
 
-        // Then
         assertThat(result).isNotNull();
         assertThat(result.getCurrencyCode()).isEqualTo("USD");
         assertThat(result.getExchangeRate()).isEqualByComparingTo(new BigDecimal("1300.00"));
@@ -221,10 +201,8 @@ class  ExchangeServiceTest {
     @Test
     @DisplayName("지원하지 않는 통화(EUR) 환율 조회 시 실패")
     void getRateByCurrency_NotFound_ThrowsException() {
-        // Given
         given(exchangeRateProvider.getExchangeRates()).willReturn(rateMap);
 
-        // When & Then
         assertThatThrownBy(() -> exchangeService.getRateByCurrency(CurrencyCode.EUR))
             .isInstanceOf(CustomBaseException.class)
             .extracting("errorCode")

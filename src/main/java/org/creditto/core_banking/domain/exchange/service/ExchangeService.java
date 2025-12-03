@@ -1,6 +1,7 @@
 package org.creditto.core_banking.domain.exchange.service;
 
 import lombok.RequiredArgsConstructor;
+import org.creditto.core_banking.domain.creditscore.service.CreditScoreService;
 import org.creditto.core_banking.domain.exchange.dto.ExchangeRateRes;
 import org.creditto.core_banking.domain.exchange.dto.ExchangeReq;
 import org.creditto.core_banking.domain.exchange.dto.ExchangeRes;
@@ -26,9 +27,9 @@ public class ExchangeService {
 
     private final ExchangeRateProvider exchangeRateProvider;
     private final ExchangeRepository exchangeRepository;
+    private final CreditScoreService creditScoreService;
 
     private static final BigDecimal SPREAD_RATE = new BigDecimal("0.01");
-    private static final BigDecimal PREFERENTIAL_RATE = new BigDecimal("0.5");
     public static final CurrencyCode KRW_CURRENCY_CODE = CurrencyCode.KRW;
     private static final int ADJUSTED_RATE_SCALE = 4;
     private static final int USD_CALCULATION_SCALE = 10; // 새로운 상수 추가
@@ -58,7 +59,7 @@ public class ExchangeService {
      * @return 환전 처리 결과
      */
     @Transactional
-    public ExchangeRes exchange(ExchangeReq request) {
+    public ExchangeRes exchange(Long userId, ExchangeReq request) {
         // 환전 전 통화와 환전 후 통화가 같은지 검증
         if (request.fromCurrency().equals(request.toCurrency())) {
             throw new CustomBaseException(ErrorBaseCode.SAME_CURRENCY_EXCHANGE_NOT_ALLOWED);
@@ -68,7 +69,7 @@ public class ExchangeService {
 
         if (isKrwToForeign || KRW_CURRENCY_CODE.equals(request.toCurrency())) {
             Map<String, ExchangeRateRes> rateMap = exchangeRateProvider.getExchangeRates(); // API 호출을 필요한 시점으로 이동
-            return doExchange(request, rateMap, isKrwToForeign);
+            return doExchange(userId, request, rateMap, isKrwToForeign);
         } else {
             // 원화가 포함되지 않은 환전은 지원하지 않음
             throw new CustomBaseException(ErrorBaseCode.CURRENCY_NOT_SUPPORTED);
@@ -83,7 +84,10 @@ public class ExchangeService {
      * @param isKrwToForeign 원화에서 외화로의 환전 여부 (true: 원화->외화, false: 외화->원화)
      * @return 환전 처리 결과
      */
-    private ExchangeRes doExchange(ExchangeReq request, Map<String, ExchangeRateRes> rateMap, boolean isKrwToForeign) {
+    private ExchangeRes doExchange(Long userId, ExchangeReq request, Map<String, ExchangeRateRes> rateMap, boolean isKrwToForeign) {
+        // 신용점수 기반 우대율 조회
+        double preferentialRate = creditScoreService.getPreferentialRate(userId);
+
         // 외화 통화 결정
         CurrencyCode foreignCurrency = isKrwToForeign ? request.toCurrency() : request.fromCurrency();
 
@@ -99,7 +103,7 @@ public class ExchangeService {
         }
 
         BigDecimal adjustedBaseRate = baseRateFromApi.divide(new BigDecimal(foreignCurrency.getUnit()), ADJUSTED_RATE_SCALE, RoundingMode.HALF_UP);
-        BigDecimal appliedRate = calculateAppliedRate(adjustedBaseRate, isKrwToForeign);
+        BigDecimal appliedRate = calculateAppliedRate(adjustedBaseRate, isKrwToForeign, preferentialRate);
 
         // 받을 금액 기준으로 보낼 금액 계산
         BigDecimal fromAmount;
@@ -144,8 +148,10 @@ public class ExchangeService {
      * @param isBuying 외화 매수 여부 (원화->외화: true, 외화->원화: false)
      * @return 최종 적용 환율
      */
-    private BigDecimal calculateAppliedRate(BigDecimal baseRate, boolean isBuying) {
-        BigDecimal effectiveSpread = SPREAD_RATE.multiply(BigDecimal.ONE.subtract(PREFERENTIAL_RATE));
+    private BigDecimal calculateAppliedRate(BigDecimal baseRate, boolean isBuying, double preferentialRate) {
+        BigDecimal preferentialRateBd = BigDecimal.valueOf(preferentialRate);
+
+        BigDecimal effectiveSpread = SPREAD_RATE.multiply(BigDecimal.ONE.subtract(preferentialRateBd));
         if (isBuying) {
             // 살 때: 매매기준율 * (1 + 유효 스프레드)
             return baseRate.multiply(BigDecimal.ONE.add(effectiveSpread));

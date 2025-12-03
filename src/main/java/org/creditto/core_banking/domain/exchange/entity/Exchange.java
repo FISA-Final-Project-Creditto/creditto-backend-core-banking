@@ -2,7 +2,6 @@ package org.creditto.core_banking.domain.exchange.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.creditto.core_banking.domain.account.entity.Account;
 import org.creditto.core_banking.domain.exchange.dto.ExchangeReq;
 import org.creditto.core_banking.global.common.BaseEntity;
 import org.creditto.core_banking.global.common.CurrencyCode;
