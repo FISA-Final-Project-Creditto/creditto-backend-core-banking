@@ -3,6 +3,7 @@ package org.creditto.core_banking.domain.overseasremittance.service;
 import lombok.RequiredArgsConstructor;
 import org.creditto.core_banking.domain.account.entity.Account;
 import org.creditto.core_banking.domain.account.repository.AccountRepository;
+import org.creditto.core_banking.domain.account.service.AccountService;
 import org.creditto.core_banking.domain.overseasremittance.dto.ExecuteRemittanceCommand;
 import org.creditto.core_banking.domain.overseasremittance.dto.OverseasRemittanceRequestDto;
 import org.creditto.core_banking.domain.overseasremittance.dto.OverseasRemittanceResponseDto;
@@ -30,6 +31,7 @@ public class OneTimeRemittanceService {
     private final AccountRepository accountRepository;
     private final RecipientFactory recipientFactory;
     private final OverseasRemittanceRepository overseasRemittanceRepository;
+    private final AccountService accountService;
 
     /**
      * 클라이언트의 해외송금 요청을 받아 전체 송금 프로세스를 조정합니다.
@@ -42,6 +44,9 @@ public class OneTimeRemittanceService {
         // 출금 계좌 조회 및 ID 확보
         Account account = accountRepository.findByAccountNo(request.getAccountNo())
                 .orElseThrow(() -> new CustomBaseException(ErrorBaseCode.NOT_FOUND_ACCOUNT));
+
+        // 비밀번호 검증
+        accountService.verifyPassword(account.getId(), request.getPassword());
 
         // RecipientFactory를 통해 수취인 조회 또는 생성
         RecipientCreateDto recipientCreateDto = request.getRecipientInfo().toRecipientCreateDto();

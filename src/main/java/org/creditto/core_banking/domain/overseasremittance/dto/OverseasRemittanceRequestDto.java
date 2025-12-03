@@ -3,6 +3,7 @@ package org.creditto.core_banking.domain.overseasremittance.dto;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -28,6 +29,13 @@ public class OverseasRemittanceRequestDto {
      */
     @NotBlank(message = "출금 계좌번호는 필수입니다.")
     private String accountNo;
+
+    /**
+     * 출금될 계좌의 비밀번호
+     */
+    @NotBlank(message = "계좌 비밀번호는 필수입니다.")
+    @Pattern(regexp = "^\\d{4}$", message = "비밀번호는 4자리 숫자여야 합니다.")
+    private String password;
 
     /**
      * 수취인의 상세 정보
