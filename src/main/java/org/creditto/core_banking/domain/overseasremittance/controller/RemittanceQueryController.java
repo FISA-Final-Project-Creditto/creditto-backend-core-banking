@@ -34,8 +34,8 @@ public class RemittanceQueryController {
      * @param userId 송금 내역을 조회할 고객의 ID
      * @return 해당 고객의 송금 내역 리스트 ({@link OverseasRemittanceResponseDto})
      */
-    @GetMapping
-    public ResponseEntity<BaseResponse<List<OverseasRemittanceResponseDto>>> getRemittanceList(@RequestParam Long userId) {
+    @GetMapping("/{userId}")
+    public ResponseEntity<BaseResponse<List<OverseasRemittanceResponseDto>>> getRemittanceList(@PathVariable Long userId) {
         return ApiResponseUtil.success(SuccessCode.OK, remittanceService.getRemittanceList(userId));
     }
 
