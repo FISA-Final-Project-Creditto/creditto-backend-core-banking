@@ -7,7 +7,8 @@ import org.creditto.core_banking.global.common.CurrencyCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -18,7 +19,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(ExchangeController.class)
+@SpringBootTest
+@AutoConfigureMockMvc
 class ExchangeControllerTest {
 
     @Autowired
@@ -47,6 +49,6 @@ class ExchangeControllerTest {
                 .andExpect(jsonPath("$.code").value("200"))
                 .andExpect(jsonPath("$.message").value("요청이 성공했습니다."))
                 .andExpect(jsonPath("$.data.preferentialRate").value(preferentialRate))
-                .andExpect(jsonPath("$.data.appliedRate").value(appliedRate));
+                .andExpect(jsonPath("$.data.appliedRate").value(appliedRate.doubleValue()));
     }
 }
