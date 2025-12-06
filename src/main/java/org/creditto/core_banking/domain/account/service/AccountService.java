@@ -1,5 +1,7 @@
 package org.creditto.core_banking.domain.account.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.creditto.core_banking.domain.account.dto.AccountCreateReq;
 import org.creditto.core_banking.domain.account.dto.AccountRes;
@@ -12,12 +14,15 @@ import org.creditto.core_banking.domain.account.service.strategy.TransactionStra
 import org.creditto.core_banking.domain.transaction.entity.TxnType;
 import org.creditto.core_banking.global.response.error.ErrorBaseCode;
 import org.creditto.core_banking.global.response.exception.CustomBaseException;
+import org.creditto.core_banking.global.util.CacheKeyUtil;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -28,6 +33,8 @@ public class AccountService {
     private final TransactionStrategyFactory strategyFactory;
     private final PasswordValidator passwordValidator;
     private final PasswordEncoder passwordEncoder;
+    private final RedisTemplate<String, Object> redisTemplate;
+    private final ObjectMapper objectMapper;
 
 
     /**
@@ -58,6 +65,11 @@ public class AccountService {
         );
 
         Account savedAccount = accountRepository.save(account);
+
+        // 새 계좌 생성 시, 총 잔액 캐시 무효화
+        String key = CacheKeyUtil.getTotalBalanceKey(userId);
+        redisTemplate.delete(key);
+
         return AccountRes.from(savedAccount);
     }
 
@@ -121,6 +133,19 @@ public class AccountService {
     }
 
     public AccountSummaryRes getTotalBalanceByUserId(Long userId) {
-        return accountRepository.findAccountSummaryByUserId(userId);
+        String key = CacheKeyUtil.getTotalBalanceKey(userId);
+        Object cachedValue = redisTemplate.opsForValue().get(key);
+
+        if (cachedValue instanceof AccountSummaryRes) {
+            return (AccountSummaryRes) cachedValue;
+        }
+
+        // DB에서 효율적으로 계좌 요약 정보 조회
+        AccountSummaryRes summary = accountRepository.findAccountSummaryByUserId(userId);
+
+        // Redis에 객체를 직접 캐싱 (10분 만료)
+        redisTemplate.opsForValue().set(key, summary, 10, TimeUnit.MINUTES);
+
+        return summary;
     }
 }
