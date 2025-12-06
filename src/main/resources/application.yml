@@ -21,12 +21,19 @@ management:
       access: read_only
     health:
       access: read_only
+    metrics:
+      access: read_only
+    prometheus:
+      access: read_only
   endpoints:
     access:
       default: none
     web:
       exposure:
         include: health, info, metrics, prometheus
+  metrics:
+    tags:
+      application: core-banking
 
 server:
   port: ${SERVER_PORT:8090}
