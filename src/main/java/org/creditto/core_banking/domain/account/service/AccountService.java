@@ -28,6 +28,7 @@ public class AccountService {
     private final TransactionStrategyFactory strategyFactory;
     private final PasswordValidator passwordValidator;
     private final PasswordEncoder passwordEncoder;
+    private final AccountLockService accountLockService;
 
 
     /**
@@ -82,15 +83,12 @@ public class AccountService {
      */
     @Transactional
     public void processTransaction(Long accountId, BigDecimal amount, TxnType txnType, Long typeId) {
-        // 팩토리에서 거래 유행에 맞는 전략 호출
         TransactionStrategy strategy = strategyFactory.getStrategy(txnType);
-
-        // 계좌 정보 조회
-        Account account = accountRepository.findById(accountId)
-                .orElseThrow(() -> new CustomBaseException(ErrorBaseCode.NOT_FOUND_ACCOUNT));
-
-        // 거래 타입 실행
-        strategy.execute(account, amount, typeId);
+        accountLockService.executeWithLock(accountId, () -> {
+            Account account = accountRepository.findByIdForUpdate(accountId)
+                    .orElseThrow(() -> new CustomBaseException(ErrorBaseCode.NOT_FOUND_ACCOUNT));
+            strategy.execute(account, amount, typeId);
+        });
     }
 
     public AccountRes getAccountById(Long id) {
