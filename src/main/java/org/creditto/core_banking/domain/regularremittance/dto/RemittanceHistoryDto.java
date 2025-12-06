@@ -1,18 +1,19 @@
 package org.creditto.core_banking.domain.regularremittance.dto;
 
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Getter
-@Builder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 public class RemittanceHistoryDto {
-    Long remittanceId;
-    BigDecimal sendAmount;
-    BigDecimal exchangeRate;
-    LocalDate createdDate;
+    private Long remittanceId;
+    private BigDecimal sendAmount;
+    private BigDecimal exchangeRate;
+    private LocalDate createdDate;
 }

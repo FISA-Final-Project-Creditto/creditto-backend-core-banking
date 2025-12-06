@@ -1,5 +1,8 @@
 package org.creditto.core_banking.domain.regularremittance.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.creditto.core_banking.domain.account.entity.Account;
 import org.creditto.core_banking.domain.account.entity.AccountState;
 import org.creditto.core_banking.domain.account.entity.AccountType;
@@ -26,6 +29,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -57,6 +61,11 @@ class RegularRemittanceServiceTest {
     private ExchangeRepository exchangeRepository;
     @Autowired
     private FeeRecordRepository feeRecordRepository;
+
+    @Autowired
+    private RedisTemplate<String, Object> redisTemplate;
+
+    private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
 
 
     private Long testUserId = 3L;
@@ -125,7 +134,7 @@ class RegularRemittanceServiceTest {
     void getRegularRemittanceHistoryByRegRemId_Forbidden() {
         assertThrows(CustomBaseException.class, () -> regularRemittanceService.getRegularRemittanceHistoryByRegRemId(otherUserId, testMonthlyRemittance.getRegRemId()));
     }
-    
+
     @Test
     @Transactional
     @DisplayName("정기송금 상세 조회 (월간) - 성공")
@@ -168,7 +177,7 @@ class RegularRemittanceServiceTest {
     void getScheduledRemittanceDetail_Forbidden() {
         // when & then
         CustomBaseException exception = assertThrows(CustomBaseException.class,
-            () -> regularRemittanceService.getScheduledRemittanceDetail(otherUserId, testMonthlyRemittance.getRegRemId()));
+                () -> regularRemittanceService.getScheduledRemittanceDetail(otherUserId, testMonthlyRemittance.getRegRemId()));
         assertThat(exception.getErrorCode()).isEqualTo(ErrorBaseCode.FORBIDDEN);
     }
 
@@ -178,7 +187,7 @@ class RegularRemittanceServiceTest {
     void getScheduledRemittanceDetail_NotFound() {
         // when & then
         CustomBaseException exception = assertThrows(CustomBaseException.class,
-            () -> regularRemittanceService.getScheduledRemittanceDetail(testUserId, 999L));
+                () -> regularRemittanceService.getScheduledRemittanceDetail(testUserId, 999L));
         assertThat(exception.getErrorCode()).isEqualTo(ErrorBaseCode.NOT_FOUND_REGULAR_REMITTANCE);
     }
 
@@ -198,6 +207,51 @@ class RegularRemittanceServiceTest {
     @DisplayName("다른 사용자의 단일 송금 내역 상세 조회 시 예외 발생")
     void getRegularRemittanceDetail_Forbidden() {
         assertThrows(CustomBaseException.class, () -> regularRemittanceService.getRemittanceHistoryDetail(otherUserId, testOverseasRemittance.getRemittanceId(), testMonthlyRemittance.getRegRemId()));
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("정기송금 내역 조회 - Cache Miss")
+    void getRegularRemittanceHistoryByRegRemId_CacheMiss() throws JsonProcessingException {
+        // given
+        Long regRemId = testMonthlyRemittance.getRegRemId();
+        String key = "regularRemittanceHistory::" + regRemId;
+
+        // when
+        List<RemittanceHistoryDto> result = regularRemittanceService.getRegularRemittanceHistoryByRegRemId(testUserId, regRemId);
+
+        // then
+        // 1. 반환된 결과가 DB의 실제 데이터와 일치하는지 검증
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getRemittanceId()).isEqualTo(testOverseasRemittance.getRemittanceId());
+
+        // 2. Redis에 값이 JSON 문자열 형태로 저장되었는지 검증
+        String cachedJson = (String) redisTemplate.opsForValue().get(key);
+        assertThat(cachedJson).isNotNull();
+        assertThat(objectMapper.writeValueAsString(result)).isEqualTo(cachedJson);
+    }
+
+    @Test
+    @DisplayName("정기송금 내역 조회 - Cache Hit")
+    void getRegularRemittanceHistoryByRegRemId_CacheHit() throws JsonProcessingException {
+        // given
+        // DB에 없는 ID로 캐시 데이터를 준비
+        Long nonExistentRegRemId = 999L;
+        String key = "regularRemittanceHistory::" + nonExistentRegRemId;
+
+        // 미리 Redis에 식별 가능한 가짜 데이터를 JSON 문자열로 저장
+        List<RemittanceHistoryDto> fakeCachedList = List.of(new RemittanceHistoryDto(999L, BigDecimal.TEN, BigDecimal.ONE, LocalDate.now()));
+        String fakeJson = objectMapper.writeValueAsString(fakeCachedList);
+        redisTemplate.opsForValue().set(key, fakeJson);
+
+        // when
+        List<RemittanceHistoryDto> result = regularRemittanceService.getRegularRemittanceHistoryByRegRemId(testUserId, nonExistentRegRemId);
+
+        // then
+        // 1. 반환된 결과가 캐시된 데이터와 동일한지 검증
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getRemittanceId()).isEqualTo(999L);
+        assertThat(result.get(0).getSendAmount()).isEqualByComparingTo(BigDecimal.TEN);
     }
 
     @Test

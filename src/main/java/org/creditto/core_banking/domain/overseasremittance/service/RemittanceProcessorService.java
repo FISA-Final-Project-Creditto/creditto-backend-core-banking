@@ -25,6 +25,7 @@ import org.creditto.core_banking.domain.transaction.service.TransactionService;
 import org.creditto.core_banking.global.common.CurrencyCode;
 import org.creditto.core_banking.global.response.error.ErrorBaseCode;
 import org.creditto.core_banking.global.response.exception.CustomBaseException;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,6 +51,7 @@ public class RemittanceProcessorService {
     private final ExchangeService exchangeService;
     private final TransactionService transactionService;
     private final RemittanceFeeService remittanceFeeService;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     /**
      * 전달된 Command를 기반으로 해외송금의 모든 단계를 실행합니다.
@@ -134,6 +136,15 @@ public class RemittanceProcessorService {
         transactionService.saveTransaction(account, actualSendAmount, TxnType.WITHDRAWAL, overseasRemittance.getRemittanceId(), TxnResult.SUCCESS);
 
         accountRepository.save(account);
+
+        // 정기 송금일 경우
+        if (command.regRemId() != null) {
+            String regularRemittanceHistoryKey = "regularRemittanceHistory::" + command.regRemId();
+            redisTemplate.delete(regularRemittanceHistoryKey);
+        } else { // 일회성 송금일 경우
+            String oneTimeRemittanceHistoryKey = "oneTimeRemittanceHistories::" + userId;
+            redisTemplate.delete(oneTimeRemittanceHistoryKey);
+        }
 
         return OverseasRemittanceResponseDto.from(overseasRemittance);
     }

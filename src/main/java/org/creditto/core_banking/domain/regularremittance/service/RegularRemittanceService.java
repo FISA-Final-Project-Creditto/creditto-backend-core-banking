@@ -1,6 +1,11 @@
 package org.creditto.core_banking.domain.regularremittance.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.creditto.core_banking.domain.account.entity.Account;
 import org.creditto.core_banking.domain.account.repository.AccountRepository;
 import org.creditto.core_banking.domain.overseasremittance.entity.OverseasRemittance;
@@ -15,6 +20,9 @@ import org.creditto.core_banking.domain.regularremittance.entity.WeeklyRegularRe
 import org.creditto.core_banking.domain.regularremittance.repository.RegularRemittanceRepository;
 import org.creditto.core_banking.global.response.error.ErrorBaseCode;
 import org.creditto.core_banking.global.response.exception.CustomBaseException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,15 +30,20 @@ import java.time.DayOfWeek;
 import java.util.List;
 import java.util.Objects;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class RegularRemittanceService {
 
+    private static final Logger log = LoggerFactory.getLogger(RegularRemittanceService.class);
     private final RegularRemittanceRepository regularRemittanceRepository;
     private final OverseasRemittanceRepository overseasRemittanceRepository;
     private final AccountRepository accountRepository;
     private final RecipientFactory recipientFactory;
+    private final RedisTemplate<String, Object> redisTemplate;
+    private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+
 
     /**
      * 특정 사용자의 모든 정기송금 설정 내역을 조회합니다.
@@ -97,12 +110,27 @@ public class RegularRemittanceService {
      * @return 해당 정기송금 설정에 대한 모든 송금 기록 목록 ({@link RemittanceHistoryDto})
      */
     public List<RemittanceHistoryDto> getRegularRemittanceHistoryByRegRemId(Long userId, Long regRemId) {
+        String key = "regularRemittanceHistory::" + regRemId;
+
+        try {
+            Object cachedObject = redisTemplate.opsForValue().get(key);
+            if (cachedObject != null) {
+                if (cachedObject instanceof String) {
+                    return objectMapper.readValue((String) cachedObject, new TypeReference<List<RemittanceHistoryDto>>() {});
+                }
+                return (List<RemittanceHistoryDto>) cachedObject;
+            }
+        } catch (Exception e) {
+            log.error("Redis cache deserialization error", e);
+        }
+
+        // 캐시 없으면 DB 조회
         RegularRemittance regularRemittance = regularRemittanceRepository.findById(regRemId)
                 .orElseThrow(() -> new CustomBaseException(ErrorBaseCode.NOT_FOUND_REGULAR_REMITTANCE));
 
         verifyUserOwnership(regularRemittance.getAccount().getUserId(), userId);
 
-        return overseasRemittanceRepository.findByRecur_RegRemIdOrderByCreatedAtDesc(regRemId).stream()
+        List<RemittanceHistoryDto> dbList = overseasRemittanceRepository.findByRecur_RegRemIdOrderByCreatedAtDesc(regRemId).stream()
                 .map(overseas -> new RemittanceHistoryDto(
                         overseas.getRemittanceId(),
                         overseas.getSendAmount(),
@@ -110,6 +138,16 @@ public class RegularRemittanceService {
                         overseas.getCreatedAt().toLocalDate()
                 ))
                 .toList();
+
+        try {
+            // 결과를 JSON 문자열로 변환하여 Redis에 저장
+            String jsonString = objectMapper.writeValueAsString(dbList);
+            redisTemplate.opsForValue().set(key, jsonString);
+        } catch (JsonProcessingException e) {
+            log.error("Redis cache serialization error", e);
+        }
+
+        return dbList;
     }
 
     /**
@@ -220,10 +258,12 @@ public class RegularRemittanceService {
         } else if (remittance instanceof WeeklyRegularRemittance weekly) {
             weekly.updateSchedule(dto.getScheduledDay());
         }
+        // 정기송금 "설정"이 변경되었으므로, 관련 "내역" 캐시도 삭제
+        redisTemplate.delete("regularRemittanceHistory::" + regRemId);
     }
 
     /**
-     * 기존 정기 해외송금 설정을 삭제합니다.
+     * 기존 정기 해외송금 설정을 삭제합니다。
      *
      * @param regRemId 삭제할 정기송금의 ID
      * @param userId   사용자 ID
@@ -235,6 +275,8 @@ public class RegularRemittanceService {
         verifyUserOwnership(remittance.getAccount().getUserId(), userId);
 
         regularRemittanceRepository.delete(remittance);
+        // 정기송금 "설정"이 삭제되었으므로, 관련 "내역" 캐시도 삭제
+        redisTemplate.delete("regularRemittanceHistory::" + regRemId);
     }
 
     private void verifyUserOwnership(Long ownerId, Long requesterId) {
