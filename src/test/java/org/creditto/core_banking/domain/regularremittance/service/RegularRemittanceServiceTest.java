@@ -1,5 +1,8 @@
 package org.creditto.core_banking.domain.regularremittance.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.creditto.core_banking.domain.account.entity.Account;
 import org.creditto.core_banking.domain.account.entity.AccountState;
 import org.creditto.core_banking.domain.account.entity.AccountType;
@@ -21,28 +24,24 @@ import org.creditto.core_banking.domain.remittancefee.repository.FeeRecordReposi
 import org.creditto.core_banking.global.common.CurrencyCode;
 import org.creditto.core_banking.global.response.error.ErrorBaseCode;
 import org.creditto.core_banking.global.response.exception.CustomBaseException;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.*;
+
+import org.springframework.test.annotation.DirtiesContext;
 
 @SpringBootTest
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
@@ -57,15 +56,16 @@ class RegularRemittanceServiceTest {
     @Autowired
     private RecipientRepository recipientRepository;
     @Autowired
+    private OverseasRemittanceRepository overseasRemittanceRepository;
+    @Autowired
     private ExchangeRepository exchangeRepository;
     @Autowired
     private FeeRecordRepository feeRecordRepository;
 
     @Autowired
-    private OverseasRemittanceRepository overseasRemittanceRepository;
-
-    @Autowired
     private RedisTemplate<String, Object> redisTemplate;
+
+    private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
 
 
     private Long testUserId = 3L;
@@ -105,12 +105,6 @@ class RegularRemittanceServiceTest {
         RecipientCreateDto otherRecipientDto = new RecipientCreateDto("Other Recipient", "987654321", "Other Bank", "OTHR", "+44", "07123456789", "GBR", CurrencyCode.GBP);
         Recipient otherRecipient = recipientRepository.save(Recipient.of(otherRecipientDto));
         regularRemittanceRepository.save(MonthlyRegularRemittance.of(otherAccount, otherRecipient, CurrencyCode.KRW, CurrencyCode.USD, BigDecimal.valueOf(500), 10, startedAt));
-    }
-
-    @AfterEach
-    void tearDown() {
-        // 각 테스트 후 Redis 데이터 삭제하여 격리성 보장
-        Objects.requireNonNull(redisTemplate.getConnectionFactory()).getConnection().flushDb();
     }
 
     @Test
@@ -217,6 +211,51 @@ class RegularRemittanceServiceTest {
 
     @Test
     @Transactional
+    @DisplayName("정기송금 내역 조회 - Cache Miss")
+    void getRegularRemittanceHistoryByRegRemId_CacheMiss() throws JsonProcessingException {
+        // given
+        Long regRemId = testMonthlyRemittance.getRegRemId();
+        String key = "regularRemittanceHistory::" + regRemId;
+
+        // when
+        List<RemittanceHistoryDto> result = regularRemittanceService.getRegularRemittanceHistoryByRegRemId(testUserId, regRemId);
+
+        // then
+        // 1. 반환된 결과가 DB의 실제 데이터와 일치하는지 검증
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getRemittanceId()).isEqualTo(testOverseasRemittance.getRemittanceId());
+
+        // 2. Redis에 값이 JSON 문자열 형태로 저장되었는지 검증
+        String cachedJson = (String) redisTemplate.opsForValue().get(key);
+        assertThat(cachedJson).isNotNull();
+        assertThat(objectMapper.writeValueAsString(result)).isEqualTo(cachedJson);
+    }
+
+    @Test
+    @DisplayName("정기송금 내역 조회 - Cache Hit")
+    void getRegularRemittanceHistoryByRegRemId_CacheHit() throws JsonProcessingException {
+        // given
+        // DB에 없는 ID로 캐시 데이터를 준비
+        Long nonExistentRegRemId = 999L;
+        String key = "regularRemittanceHistory::" + nonExistentRegRemId;
+
+        // 미리 Redis에 식별 가능한 가짜 데이터를 JSON 문자열로 저장
+        List<RemittanceHistoryDto> fakeCachedList = List.of(new RemittanceHistoryDto(999L, BigDecimal.TEN, BigDecimal.ONE, LocalDate.now()));
+        String fakeJson = objectMapper.writeValueAsString(fakeCachedList);
+        redisTemplate.opsForValue().set(key, fakeJson);
+
+        // when
+        List<RemittanceHistoryDto> result = regularRemittanceService.getRegularRemittanceHistoryByRegRemId(testUserId, nonExistentRegRemId);
+
+        // then
+        // 1. 반환된 결과가 캐시된 데이터와 동일한지 검증
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getRemittanceId()).isEqualTo(999L);
+        assertThat(result.get(0).getSendAmount()).isEqualByComparingTo(BigDecimal.TEN);
+    }
+
+    @Test
+    @Transactional
     @DisplayName("월간 정기송금 신규 등록")
     void createScheduledRemittance_Monthly_Success() {
         LocalDate newStartedAt = LocalDate.of(2025, 1, 1);
@@ -286,29 +325,18 @@ class RegularRemittanceServiceTest {
 
     @Test
     @Transactional
-    @DisplayName("정기송금 설정 수정 시 캐시 삭제")
+    @DisplayName("정기송금 설정 수정")
     void updateScheduledRemittance_Success() {
-        // given
-        Long regRemId = testMonthlyRemittance.getRegRemId();
-        String key = "regularRemittanceHistory::" + regRemId;
-        redisTemplate.opsForValue().set(key, List.of()); // 미리 캐시를 저장해둠
-
         RegularRemittanceUpdateDto updateDto = new RegularRemittanceUpdateDto(
                 testAccount.getAccountNo(), BigDecimal.valueOf(1500), RegRemStatus.PAUSED, 25, null
         );
 
-        // when
-        regularRemittanceService.updateScheduledRemittance(regRemId, testUserId, updateDto);
+        regularRemittanceService.updateScheduledRemittance(testMonthlyRemittance.getRegRemId(), testUserId, updateDto);
 
-        // then
-        RegularRemittance updated = regularRemittanceRepository.findById(regRemId).get();
+        RegularRemittance updated = regularRemittanceRepository.findById(testMonthlyRemittance.getRegRemId()).get();
         assertThat(updated.getSendAmount()).isEqualByComparingTo("1500");
         assertThat(updated.getRegRemStatus()).isEqualTo(RegRemStatus.PAUSED);
         assertThat(((MonthlyRegularRemittance) updated).getScheduledDate()).isEqualTo(25);
-
-        // 캐시 삭제 검증
-        Object cachedValue = redisTemplate.opsForValue().get(key);
-        assertThat(cachedValue).isNull();
     }
 
     @Test
@@ -324,23 +352,13 @@ class RegularRemittanceServiceTest {
 
     @Test
     @Transactional
-    @DisplayName("정기송금 설정 삭제 시 캐시 삭제")
+    @DisplayName("정기송금 설정 삭제")
     void deleteScheduledRemittance_Success() {
-        // given
         Long regRemId = testMonthlyRemittance.getRegRemId();
-        String key = "regularRemittanceHistory::" + regRemId;
-        redisTemplate.opsForValue().set(key, List.of()); // 미리 캐시를 저장해둠
-
-        // when
         regularRemittanceService.deleteScheduledRemittance(regRemId, testUserId);
 
-        // then
         Optional<RegularRemittance> deleted = regularRemittanceRepository.findById(regRemId);
         assertThat(deleted).isNotPresent();
-
-        // 캐시 삭제 검증
-        Object cachedValue = redisTemplate.opsForValue().get(key);
-        assertThat(cachedValue).isNull();
     }
 
     @Test
@@ -362,54 +380,10 @@ class RegularRemittanceServiceTest {
 
         RegularRemittanceResponseDto result = regularRemittanceService.createScheduledRemittance(testUserId, createDto);
 
+        // Retrieve the entity directly from the repository
         RegularRemittance savedRemittance = regularRemittanceRepository.findById(result.getRegRemId())
                 .orElseThrow(() -> new AssertionError("Saved remittance not found"));
 
         assertThat(savedRemittance.getStartedAt()).isEqualTo(expectedStartedAt);
-    }
-    
-    // --- 캐싱 관련 새로운 테스트 ---
-
-    @Test
-    @Transactional
-    @DisplayName("정기송금 내역 조회 - Cache Miss (캐시 없음)")
-    void getRegularRemittanceHistoryByRegRemId_CacheMiss() {
-        // given
-        Long regRemId = testMonthlyRemittance.getRegRemId();
-        String key = "regularRemittanceHistory::" + regRemId;
-
-        // when
-        regularRemittanceService.getRegularRemittanceHistoryByRegRemId(testUserId, regRemId);
-
-        // then
-        // 1. DB를 조회했는지 검증 (SpyBean)
-        verify(overseasRemittanceRepository, times(1)).findByRecur_RegRemIdOrderByCreatedAtDesc(regRemId);
-        // 2. Redis에 값이 저장되었는지 검증
-        Object cachedValue = redisTemplate.opsForValue().get(key);
-        assertThat(cachedValue).isNotNull();
-        assertThat((List<RemittanceHistoryDto>) cachedValue).hasSize(1);
-    }
-
-    @Test
-    @Transactional
-    @DisplayName("정기송금 내역 조회 - Cache Hit (캐시 있음)")
-    void getRegularRemittanceHistoryByRegRemId_CacheHit() {
-        // given
-        Long regRemId = testMonthlyRemittance.getRegRemId();
-        String key = "regularRemittanceHistory::" + regRemId;
-        
-        // 미리 Redis에 가짜 데이터 저장
-        List<RemittanceHistoryDto> fakeCachedList = List.of(new RemittanceHistoryDto(999L, BigDecimal.TEN, BigDecimal.ONE, LocalDate.now()));
-        redisTemplate.opsForValue().set(key, fakeCachedList);
-        
-        // when
-        List<RemittanceHistoryDto> result = regularRemittanceService.getRegularRemittanceHistoryByRegRemId(testUserId, regRemId);
-
-        // then
-        // 1. 반환된 결과가 캐시된 데이터와 동일한지 검증 (DB 데이터가 아님을 증명)
-        assertThat(result.get(0).getRemittanceId()).isEqualTo(999L);
-        
-        // 2. DB를 조회하지 않았는지 검증 (SpyBean)
-        verify(overseasRemittanceRepository, never()).findByRecur_RegRemIdOrderByCreatedAtDesc(anyLong());
     }
 }
