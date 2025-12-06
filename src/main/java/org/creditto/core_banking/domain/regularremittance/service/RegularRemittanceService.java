@@ -15,6 +15,7 @@ import org.creditto.core_banking.domain.regularremittance.entity.WeeklyRegularRe
 import org.creditto.core_banking.domain.regularremittance.repository.RegularRemittanceRepository;
 import org.creditto.core_banking.global.response.error.ErrorBaseCode;
 import org.creditto.core_banking.global.response.exception.CustomBaseException;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +32,7 @@ public class RegularRemittanceService {
     private final OverseasRemittanceRepository overseasRemittanceRepository;
     private final AccountRepository accountRepository;
     private final RecipientFactory recipientFactory;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     /**
      * 특정 사용자의 모든 정기송금 설정 내역을 조회합니다.
@@ -97,12 +99,21 @@ public class RegularRemittanceService {
      * @return 해당 정기송금 설정에 대한 모든 송금 기록 목록 ({@link RemittanceHistoryDto})
      */
     public List<RemittanceHistoryDto> getRegularRemittanceHistoryByRegRemId(Long userId, Long regRemId) {
+        String key = "regularRemittanceHistory::" + regRemId;
+
+        // redis에서 캐시 확인
+        List<RemittanceHistoryDto> cachedList = (List<RemittanceHistoryDto>) redisTemplate.opsForValue().get(key);
+        if (cachedList != null) {
+            return cachedList;
+        }
+
+        // 캐시 없으면 DB 조회
         RegularRemittance regularRemittance = regularRemittanceRepository.findById(regRemId)
                 .orElseThrow(() -> new CustomBaseException(ErrorBaseCode.NOT_FOUND_REGULAR_REMITTANCE));
 
         verifyUserOwnership(regularRemittance.getAccount().getUserId(), userId);
 
-        return overseasRemittanceRepository.findByRecur_RegRemIdOrderByCreatedAtDesc(regRemId).stream()
+        List<RemittanceHistoryDto> dbList = overseasRemittanceRepository.findByRecur_RegRemIdOrderByCreatedAtDesc(regRemId).stream()
                 .map(overseas -> new RemittanceHistoryDto(
                         overseas.getRemittanceId(),
                         overseas.getSendAmount(),
@@ -110,6 +121,11 @@ public class RegularRemittanceService {
                         overseas.getCreatedAt().toLocalDate()
                 ))
                 .toList();
+
+        // 결과를 redis에 저장
+        redisTemplate.opsForValue().set(key, dbList);
+
+        return dbList;
     }
 
     /**
@@ -220,10 +236,12 @@ public class RegularRemittanceService {
         } else if (remittance instanceof WeeklyRegularRemittance weekly) {
             weekly.updateSchedule(dto.getScheduledDay());
         }
+        // 정기송금 "설정"이 변경되었으므로, 관련 "내역" 캐시도 삭제
+        redisTemplate.delete("regularRemittanceHistory::" + regRemId);
     }
 
     /**
-     * 기존 정기 해외송금 설정을 삭제합니다.
+     * 기존 정기 해외송금 설정을 삭제합니다。
      *
      * @param regRemId 삭제할 정기송금의 ID
      * @param userId   사용자 ID
@@ -235,6 +253,8 @@ public class RegularRemittanceService {
         verifyUserOwnership(remittance.getAccount().getUserId(), userId);
 
         regularRemittanceRepository.delete(remittance);
+        // 정기송금 "설정"이 삭제되었으므로, 관련 "내역" 캐시도 삭제
+        redisTemplate.delete("regularRemittanceHistory::" + regRemId);
     }
 
     private void verifyUserOwnership(Long ownerId, Long requesterId) {

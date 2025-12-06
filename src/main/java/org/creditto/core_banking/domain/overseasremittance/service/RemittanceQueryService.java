@@ -5,6 +5,7 @@ import org.creditto.core_banking.domain.overseasremittance.dto.CreditAnalysisRes
 import org.creditto.core_banking.domain.overseasremittance.dto.OverseasRemittanceResponseDto;
 import org.creditto.core_banking.domain.overseasremittance.repository.OverseasRemittanceRepository;
 import org.creditto.core_banking.global.response.exception.CustomBaseException;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +21,7 @@ import java.util.List;
 public class RemittanceQueryService {
 
     private final OverseasRemittanceRepository remittanceRepository;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     /**
      * 특정 고객의 모든 해외송금 내역을 조회합니다.
@@ -28,10 +30,24 @@ public class RemittanceQueryService {
      * @return 고객의 송금 내역 DTO 리스트
      */
     public List<OverseasRemittanceResponseDto> getRemittanceList(Long userId) {
-        return remittanceRepository.findByUserIdWithDetails(userId)
+        String key = "oneTimeRemittanceHistories::" + userId;
+
+        // redis에서 캐시 확인
+        List<OverseasRemittanceResponseDto> cachedList = (List<OverseasRemittanceResponseDto>) redisTemplate.opsForValue().get(key);
+        if (cachedList != null) {
+            return cachedList;
+        }
+
+        // 캐시 없으면 DB 조회
+        List<OverseasRemittanceResponseDto> dbList = remittanceRepository.findByUserIdWithDetails(userId)
                 .stream()
                 .map(OverseasRemittanceResponseDto::from)
                 .toList();
+
+        // 결과를 redis에 저장
+        redisTemplate.opsForValue().set(key, dbList);
+
+        return dbList;
     }
 
     /**
