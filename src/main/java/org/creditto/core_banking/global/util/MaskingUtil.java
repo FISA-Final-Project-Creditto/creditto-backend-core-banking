@@ -17,7 +17,8 @@ public class MaskingUtil {
             "fromAccountNumber",
             "toAccountNumber",
             "senderAccountNumber",
-            "receiverAccountNumber"
+            "receiverAccountNumber",
+            "recipientAccountNo"
     );
 
 
