@@ -1,10 +1,12 @@
 package org.creditto.core_banking.domain.account.service;
 
 import java.util.concurrent.TimeUnit;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.creditto.core_banking.global.response.error.ErrorBaseCode;
 import org.creditto.core_banking.global.response.exception.CustomBaseException;
+import org.redisson.RedissonShutdownException;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Service;
@@ -28,9 +30,12 @@ public class AccountLockService {
                     accountLockProperties.getLeaseMillis(),
                     TimeUnit.MILLISECONDS
             );
-        } catch (Exception redisException) {
+        } catch (RedissonShutdownException redisException) {
             redisAvailable = false;
             log.warn("Redis lock 불가, fallback 전략을 사용합니다. accountId={}, reason={}", accountId, redisException.getMessage());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new CustomBaseException(ErrorBaseCode.ACCOUNT_LOCK_INTERRUPTED);
         }
 
         try {
