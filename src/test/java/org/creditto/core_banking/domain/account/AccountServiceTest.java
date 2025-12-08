@@ -8,6 +8,7 @@ import org.creditto.core_banking.domain.account.entity.Account;
 import org.creditto.core_banking.domain.account.entity.AccountState;
 import org.creditto.core_banking.domain.account.entity.AccountType;
 import org.creditto.core_banking.domain.account.repository.AccountRepository;
+import org.creditto.core_banking.domain.account.service.AccountLockService;
 import org.creditto.core_banking.domain.account.service.AccountService;
 import org.creditto.core_banking.domain.account.service.PasswordValidator;
 import org.creditto.core_banking.domain.account.service.strategy.TransactionStrategy;
@@ -53,6 +54,9 @@ class AccountServiceTest {
     @Mock
     private TransactionStrategy mockStrategy;
 
+    @Mock
+    private AccountLockService accountLockService;
+
     @InjectMocks
     private AccountService accountService;
 
@@ -80,7 +84,7 @@ class AccountServiceTest {
 
 
         // When
-        AccountRes result = accountService.createAccount(request, userId);
+        accountService.createAccount(request, userId);
 
         // Then
         verify(passwordValidator).validatePassword(rawPassword);
@@ -195,16 +199,22 @@ class AccountServiceTest {
 
         Account mockAccount = Account.of("ACC001", "테스트 계좌", "password", BigDecimal.valueOf(50000), AccountType.DEPOSIT, AccountState.ACTIVE, 1L);
 
-        given(accountRepository.findById(accountId)).willReturn(Optional.of(mockAccount));
+        given(accountRepository.findByIdForUpdate(accountId)).willReturn(Optional.of(mockAccount));
         given(strategyFactory.getStrategy(txnType)).willReturn(mockStrategy);
+        doAnswer(invocation -> {
+            Runnable runnable = invocation.getArgument(1);
+            runnable.run();
+            return null;
+        }).when(accountLockService).executeWithLock(eq(accountId), any(Runnable.class));
 
         // when
         accountService.processTransaction(accountId, amount, txnType, relatedId);
 
         // then
-        verify(accountRepository).findById(accountId);
+        verify(accountRepository).findByIdForUpdate(accountId);
         verify(strategyFactory).getStrategy(txnType);
         verify(mockStrategy).execute(mockAccount, amount, relatedId);
+        verify(accountLockService).executeWithLock(eq(accountId), any(Runnable.class));
     }
 
     @Test
