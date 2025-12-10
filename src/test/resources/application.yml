@@ -23,3 +23,9 @@ scheduler:
   remittance:
     monthly-cron: "0 0 1 * * *"
     weekly-cron: "0 0 3 * * MON-FRI"
+
+core:
+  account-lock:
+    account-lock-prefix: "test:account:lock:"
+    wait-millis: 5000
+    lease-millis: 20000
