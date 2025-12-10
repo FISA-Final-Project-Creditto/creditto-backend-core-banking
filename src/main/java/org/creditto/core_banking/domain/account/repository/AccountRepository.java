@@ -1,15 +1,18 @@
 package org.creditto.core_banking.domain.account.repository;
 
-import org.creditto.core_banking.domain.account.dto.AccountSummaryRes;
-import org.creditto.core_banking.domain.account.entity.Account;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
-import org.springframework.stereotype.Repository;
-
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.QueryHint;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
+import org.creditto.core_banking.domain.account.dto.AccountSummaryRes;
+import org.creditto.core_banking.domain.account.entity.Account;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.QueryHints;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
 @Repository
 public interface AccountRepository extends JpaRepository<Account, Long> {
@@ -27,4 +30,9 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
             "COUNT(ac), COALESCE(SUM(ac.balance), 0)) " +
             "FROM Account ac WHERE ac.userId = :userId")
     AccountSummaryRes findAccountSummaryByUserId(@Param("userId") Long userId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "3000"))
+    @Query("SELECT a FROM Account a WHERE a.id = :id")
+    Optional<Account> findByIdForUpdate(@Param("id") Long id);
 }

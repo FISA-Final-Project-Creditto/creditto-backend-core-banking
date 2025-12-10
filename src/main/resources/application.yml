@@ -6,6 +6,11 @@ spring:
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+      timeout: 2000
 
 scheduler:
   remittance:
@@ -41,3 +46,9 @@ server:
 logging:
   level:
     org.hibernate.sql: DEBUG
+
+core:
+  account-lock:
+    account-lock-prefix: ${ACCOUNT_LOCK_PREFIX}
+    wait-millis: ${ACCOUNT_LOCK_WAIT_MILLIS}
+    lease-millis: ${ACCOUNT_LOCK_LEASE_MILLIS}

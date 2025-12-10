@@ -1,18 +1,20 @@
 package org.creditto.core_banking.domain.exchange.controller;
 
+import java.math.BigDecimal;
 import org.creditto.core_banking.domain.creditscore.service.CreditScoreService;
 import org.creditto.core_banking.domain.exchange.dto.PreferentialRateRes;
 import org.creditto.core_banking.domain.exchange.service.ExchangeService;
 import org.creditto.core_banking.global.common.CurrencyCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import org.springframework.test.web.servlet.MockMvc;
-
-import java.math.BigDecimal;
 
 import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -26,10 +28,10 @@ class ExchangeControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
+    @Autowired
     private ExchangeService exchangeService;
 
-    @MockBean
+    @Autowired
     private CreditScoreService creditScoreService;
 
     @Test
@@ -50,5 +52,21 @@ class ExchangeControllerTest {
                 .andExpect(jsonPath("$.message").value("요청이 성공했습니다."))
                 .andExpect(jsonPath("$.data.preferentialRate").value(preferentialRate))
                 .andExpect(jsonPath("$.data.appliedRate").value(appliedRate.doubleValue()));
+    }
+
+    @TestConfiguration
+    static class MockConfig {
+
+        @Bean
+        @Primary
+        ExchangeService exchangeService() {
+            return Mockito.mock(ExchangeService.class);
+        }
+
+        @Bean
+        @Primary
+        CreditScoreService creditScoreService() {
+            return Mockito.mock(CreditScoreService.class);
+        }
     }
 }
